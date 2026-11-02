@@ -1,39 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  Plus,
-  Search,
-  Compass,
-  Workflow,
-  Layers,
-  FileText,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useOS } from "@/lib/os/store";
 import { today, uid } from "@/lib/os/seed";
-import type {
-  KnowledgeFormat,
-  KnowledgeItem,
-  KnowledgeType,
-  PriorityId,
-} from "@/lib/os/types";
+import type { KnowledgeItem } from "@/lib/os/types";
+import { getKnowledgeFormat, matchesKnowledgeQuery } from "@/lib/os/knowledge";
+import { Button, Empty, PageHeader } from "@/components/os/ui";
 import {
-  KNOWLEDGE_FORMATS,
-  formatBadgeClass,
-  getKnowledgeFormat,
-  getKnowledgePreview,
-  matchesKnowledgeQuery,
-} from "@/lib/os/knowledge";
-import {
-  Badge,
-  Button,
-  Empty,
-  Glass,
-  Input,
-  PageHeader,
-  Select,
-} from "@/components/os/ui";
-import { KnowledgeEditorModal } from "@/components/os/KnowledgeEditorModal";
+  KnowledgeCard,
+  KnowledgeFilters,
+  KnowledgeEditorModal,
+} from "@/components/os/knowledge";
 
 export const Route = createFileRoute("/knowledge")({
   head: () => ({
@@ -53,29 +31,6 @@ export const Route = createFileRoute("/knowledge")({
   }),
   component: KnowledgePage,
 });
-
-const TYPES: KnowledgeType[] = [
-  "Note",
-  "Research",
-  "Learning",
-  "Documentation",
-  "Book/Resource",
-  "User Feedback",
-  "Market Insight",
-  "Lesson",
-  "Decision",
-  "Document",
-];
-
-const FORMAT_ICONS: Record<
-  KnowledgeFormat,
-  React.ComponentType<{ className?: string }>
-> = {
-  principle: Compass,
-  method: Workflow,
-  framework: Layers,
-  custom: FileText,
-};
 
 function KnowledgePage() {
   const { state, update } = useOS();
@@ -136,54 +91,17 @@ function KnowledgePage() {
         }
       />
 
-      {/* Filter and Search Bar */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_170px_170px_190px]">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search titles, principles, steps, tags…"
-            className="pl-9"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-
-        {/* Knowledge Format Filter */}
-        <Select
-          value={formatFilter}
-          onChange={setFormatFilter}
-          options={[
-            { value: "all", label: "All Formats" },
-            { value: "principle", label: "Principles" },
-            { value: "method", label: "Methods" },
-            { value: "framework", label: "Frameworks" },
-            { value: "custom", label: "Custom" },
-          ]}
-        />
-
-        {/* Existing Knowledge Type Filter */}
-        <Select
-          value={type}
-          onChange={setType}
-          options={[
-            { value: "all", label: "All Types" },
-            ...TYPES.map((t) => ({ value: t, label: t })),
-          ]}
-        />
-
-        {/* Priority Filter */}
-        <Select
-          value={prio}
-          onChange={setPrio}
-          options={[
-            { value: "all", label: "All Priorities" },
-            ...state.priorities.map((p) => ({
-              value: String(p.id),
-              label: `#${p.id} ${p.name}`,
-            })),
-          ]}
-        />
-      </div>
+      <KnowledgeFilters
+        query={q}
+        onQueryChange={setQ}
+        formatFilter={formatFilter}
+        onFormatFilterChange={setFormatFilter}
+        typeFilter={type}
+        onTypeFilterChange={setType}
+        priorityFilter={prio}
+        onPriorityFilterChange={setPrio}
+        priorities={state.priorities}
+      />
 
       {items.length === 0 ? (
         <Empty title="No knowledge entries found">
@@ -195,59 +113,17 @@ function KnowledgePage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {items.map((k) => {
-            const fmt = getKnowledgeFormat(k);
-            const FmtIcon = FORMAT_ICONS[fmt];
-            const fmtMeta = KNOWLEDGE_FORMATS.find((f) => f.id === fmt);
-            const preview = getKnowledgePreview(k);
             const linkedProject = state.projects.find(
               (p) => p.id === k.projectId,
             );
 
             return (
-              <Glass
+              <KnowledgeCard
                 key={k.id}
-                className="cursor-pointer p-5 transition hover:-translate-y-1 hover:border-primary/40 flex flex-col justify-between"
+                item={k}
+                linkedProject={linkedProject}
                 onClick={() => setEdit(k)}
-              >
-                <div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {/* Knowledge Format Badge */}
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${formatBadgeClass(
-                        fmt,
-                      )}`}
-                    >
-                      <FmtIcon className="h-3 w-3" />
-                      {fmtMeta?.label || fmt}
-                    </span>
-
-                    {/* Independent Knowledge Type Badge */}
-                    <Badge>{k.type}</Badge>
-
-                    {/* Priority Badge */}
-                    {k.priorityId && <Badge>#{k.priorityId}</Badge>}
-                  </div>
-
-                  <div className="mt-3 font-semibold text-foreground text-base leading-snug line-clamp-2">
-                    {k.title}
-                  </div>
-
-                  <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-muted-foreground">
-                    {preview}
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-glass-border/40 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                  <div className="truncate max-w-[200px]">
-                    {linkedProject ? linkedProject.name : k.createdAt}
-                  </div>
-                  {k.tags && (
-                    <div className="truncate max-w-[150px] font-mono text-[10px]">
-                      #{k.tags}
-                    </div>
-                  )}
-                </div>
-              </Glass>
+              />
             );
           })}
         </div>

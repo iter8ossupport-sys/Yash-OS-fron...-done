@@ -22,4 +22,3 @@ Fixes #(issue number)
 - [ ] `npm test` passes all automated test suites
 - [ ] `npm run build` generates production assets cleanly
 - [ ] Backward compatibility with existing local storage data is preserved
-

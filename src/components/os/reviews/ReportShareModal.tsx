@@ -1,24 +1,12 @@
-import { useState, useMemo } from "react";
-import {
-  Share2,
-  Lock,
-  Eye,
-  ShieldAlert,
-  Copy,
-  Check,
-  Download,
-  Trash2,
-  Key,
-  Calendar,
-  Sparkles,
-} from "lucide-react";
+import { useState } from "react";
+import { Lock, Copy, Check, Trash2, Key, Sparkles } from "lucide-react";
 import { useOS } from "@/lib/os/store";
 import {
   createReportShare,
   deleteReportShare,
 } from "@/lib/os/reviews/operations";
 import type { ReportShareConfig } from "@/lib/os/types";
-import { Badge, Button, Glass, Input, Label } from "@/components/os/ui";
+import { Badge, Button, Input, Label, Modal } from "@/components/os/ui";
 import { cn } from "@/lib/utils";
 
 interface ReportShareModalProps {
@@ -124,278 +112,13 @@ export function ReportShareModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
-      <Glass className="w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-glass-border shadow-2xl">
-        {/* Modal Header */}
-        <div className="p-5 border-b border-glass-border flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-              <Share2 className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold font-display">
-                Export & Report Sharing Permissions
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Generate permission-scoped, redacted digests and future
-                cryptographically tokenized links
-              </p>
-            </div>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0"
-          >
-            ✕
-          </Button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-6">
-          {/* Security Notice */}
-          <div className="p-3.5 rounded-lg border border-primary/20 bg-primary/5 flex items-start gap-3">
-            <Lock className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-            <div className="text-xs text-muted-foreground leading-relaxed">
-              <strong className="text-foreground">
-                Local-First Security Policy:
-              </strong>{" "}
-              All exports and digests are generated entirely on your device.
-              Proprietary founder financial data is stripped by default unless
-              explicitly checked below.
-            </div>
-          </div>
-
-          {/* Create New Share Configuration */}
-          <Glass className="p-4 space-y-4 bg-secondary/10 border border-glass-border">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              New Permission Grant
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs">
-                  Recipient / Audience Label (Optional)
-                </Label>
-                <Input
-                  placeholder="e.g. Mentor, Advisory Board, Accountability Partner"
-                  value={recipient}
-                  onChange={(e) => setRecipient(e.target.value)}
-                  className="mt-1 text-xs"
-                />
-              </div>
-
-              <div>
-                <Label className="text-xs">Expiration Window</Label>
-                <select
-                  value={expiresInDays}
-                  onChange={(e) =>
-                    setExpiresInDays(parseInt(e.target.value, 10))
-                  }
-                  className="mt-1 w-full h-9 rounded-md border border-glass-border bg-background px-3 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value={7}>7 Days</option>
-                  <option value={30}>30 Days (Recommended)</option>
-                  <option value={90}>90 Days</option>
-                  <option value={0}>Never Expire</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Permission Scope */}
-            <div className="space-y-2">
-              <Label className="text-xs">Permission & Redaction Level</Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {[
-                  {
-                    id: "summary_only" as const,
-                    title: "Summary Only",
-                    desc: "High-level metrics, hours, completion rates. No qualitative notes.",
-                  },
-                  {
-                    id: "full_with_reflections" as const,
-                    title: "Full + Reflections",
-                    desc: "Includes retrospective reflections, bottlenecks & improvements.",
-                  },
-                  {
-                    id: "anonymized_founder" as const,
-                    title: "Anonymized Founder",
-                    desc: "Redacts sensitive project titles & financials; shows pure discipline ratios.",
-                  },
-                ].map((tier) => (
-                  <button
-                    key={tier.id}
-                    type="button"
-                    onClick={() => setPermissionLevel(tier.id)}
-                    className={cn(
-                      "p-3 rounded-lg border text-left transition-all",
-                      permissionLevel === tier.id
-                        ? "border-primary bg-primary/10 shadow-sm"
-                        : "border-glass-border bg-secondary/20 hover:border-glass-border/80",
-                    )}
-                  >
-                    <div className="text-xs font-semibold text-foreground">
-                      {tier.title}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
-                      {tier.desc}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Redaction Gating Toggles */}
-            <div className="space-y-2 pt-1 border-t border-glass-border">
-              <div className="flex items-center justify-between text-xs">
-                <div>
-                  <span className="font-semibold text-foreground">
-                    Include Financial & P2 PnL Allocation
-                  </span>
-                  <p className="text-[11px] text-muted-foreground">
-                    Uncheck to strip sensitive trading revenue/drawdowns
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={includeFinancials}
-                  onChange={(e) => setIncludeFinancials(e.target.checked)}
-                  className="h-4 w-4 rounded accent-primary"
-                />
-              </div>
-
-              <div className="flex items-center justify-between text-xs">
-                <div>
-                  <span className="font-semibold text-foreground">
-                    Include Audit History Logs
-                  </span>
-                  <p className="text-[11px] text-muted-foreground">
-                    Include retroactive correction timestamps and adjustments
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={includeAuditHistory}
-                  onChange={(e) => setIncludeAuditHistory(e.target.checked)}
-                  className="h-4 w-4 rounded accent-primary"
-                />
-              </div>
-            </div>
-
-            <Button
-              onClick={handleCreateShare}
-              className="w-full text-xs font-semibold flex items-center justify-center gap-2"
-            >
-              <Key className="h-3.5 w-3.5" />
-              Generate Tokenized Share Snapshot
-            </Button>
-          </Glass>
-
-          {/* Active Grants List */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Active Sharing Grants ({sharedReports.length})
-              </h3>
-            </div>
-
-            {sharedReports.length === 0 ? (
-              <div className="p-6 text-center border border-dashed rounded-lg border-glass-border text-xs text-muted-foreground">
-                No active report tokens generated yet. Configure a permission
-                grant above to share this period.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {sharedReports.map((share) => (
-                  <Glass
-                    key={share.id}
-                    className="p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 border border-glass-border"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-xs text-foreground">
-                          {share.recipient || "Unlabeled Grant"}
-                        </span>
-                        <Badge className="text-[10px] uppercase">
-                          {share.permissionLevel.replace(/_/g, " ")}
-                        </Badge>
-                        {share.includeFinancials && (
-                          <Badge className="text-[10px] border-warning/30 text-warning bg-warning/10">
-                            +Financials
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground font-mono">
-                        <span>Token: {share.shareToken.slice(0, 16)}...</span>
-                        <span>•</span>
-                        <span>
-                          {share.expiresAt
-                            ? `Expires ${share.expiresAt.slice(0, 10)}`
-                            : "No Expiration"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="glass"
-                        size="sm"
-                        onClick={() => handleCopyLink(share)}
-                        className="text-xs h-7 px-2.5 flex items-center gap-1.5"
-                      >
-                        {copiedToken === share.shareToken ? (
-                          <>
-                            <Check className="h-3 w-3 text-success" />
-                            Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3 w-3" />
-                            Copy Link
-                          </>
-                        )}
-                      </Button>
-
-                      <Button
-                        variant="glass"
-                        size="sm"
-                        onClick={() => handleCopyMarkdownDigest(share)}
-                        className="text-xs h-7 px-2.5 flex items-center gap-1.5"
-                      >
-                        {copiedToken === share.id ? (
-                          <>
-                            <Check className="h-3 w-3 text-success" />
-                            Digest Copied
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-3 w-3 text-primary" />
-                            Markdown
-                          </>
-                        )}
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRevoke(share.id)}
-                        className="text-xs h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </Glass>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="p-4 border-t border-glass-border bg-secondary/10 flex justify-end">
+    <Modal
+      open={open}
+      onClose={onClose}
+      wide
+      title="Export & Report Sharing Permissions"
+      footer={
+        <div className="flex justify-end">
           <Button
             variant="glass"
             size="sm"
@@ -405,7 +128,274 @@ export function ReportShareModal({
             Close
           </Button>
         </div>
-      </Glass>
-    </div>
+      }
+    >
+      <div className="space-y-5 text-xs">
+        {/* Subtitle */}
+        <p className="-mt-1 text-xs text-muted-foreground">
+          Generate permission-scoped, redacted digests and future
+          cryptographically tokenized links
+        </p>
+
+        {/* Security Notice */}
+        <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5 flex items-start gap-3">
+          <Lock className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <div className="text-xs text-muted-foreground leading-relaxed">
+            <strong className="text-foreground">
+              Local-First Security Policy:
+            </strong>{" "}
+            All exports and digests are generated entirely on your device.
+            Proprietary founder financial data is stripped by default unless
+            explicitly checked below.
+          </div>
+        </div>
+
+        {/* Create New Share Configuration */}
+        <div className="p-4 rounded-2xl space-y-4 bg-secondary/20 border border-glass-border">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            New Permission Grant
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs">
+                Recipient / Audience Label (Optional)
+              </Label>
+              <Input
+                id="share-recipient"
+                name="recipient"
+                placeholder="e.g. Mentor, Advisory Board, Accountability Partner"
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value)}
+                className="mt-1 text-xs"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs">Expiration Window</Label>
+              <select
+                id="share-expiration"
+                name="expirationWindow"
+                value={expiresInDays}
+                onChange={(e) => setExpiresInDays(parseInt(e.target.value, 10))}
+                className="mt-1 w-full h-10 rounded-xl border border-input bg-secondary/60 px-3 text-xs text-foreground outline-none"
+              >
+                <option value={7} className="bg-popover">
+                  7 Days
+                </option>
+                <option value={30} className="bg-popover">
+                  30 Days (Recommended)
+                </option>
+                <option value={90} className="bg-popover">
+                  90 Days
+                </option>
+                <option value={0} className="bg-popover">
+                  Never Expire
+                </option>
+              </select>
+            </div>
+          </div>
+
+          {/* Permission Scope */}
+          <div className="space-y-2">
+            <Label className="text-xs">Permission & Redaction Level</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {[
+                {
+                  id: "summary_only" as const,
+                  title: "Summary Only",
+                  desc: "High-level metrics, hours, completion rates. No qualitative notes.",
+                },
+                {
+                  id: "full_with_reflections" as const,
+                  title: "Full + Reflections",
+                  desc: "Includes retrospective reflections, bottlenecks & improvements.",
+                },
+                {
+                  id: "anonymized_founder" as const,
+                  title: "Anonymized Founder",
+                  desc: "Redacts sensitive project titles & financials; shows pure discipline ratios.",
+                },
+              ].map((tier) => (
+                <button
+                  key={tier.id}
+                  type="button"
+                  onClick={() => setPermissionLevel(tier.id)}
+                  className={cn(
+                    "p-3 rounded-xl border text-left transition-all",
+                    permissionLevel === tier.id
+                      ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40 glow"
+                      : "border-glass-border bg-secondary/30 hover:border-glass-border/80 hover:bg-secondary/50",
+                  )}
+                >
+                  <div className="text-xs font-semibold text-foreground">
+                    {tier.title}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                    {tier.desc}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Redaction Gating Toggles */}
+          <div className="space-y-2.5 pt-2 border-t border-glass-border/40">
+            <label
+              htmlFor="share-financials"
+              className="flex items-center justify-between text-xs cursor-pointer"
+            >
+              <div>
+                <span className="font-semibold text-foreground">
+                  Include Financial & P2 PnL Allocation
+                </span>
+                <p className="text-[11px] text-muted-foreground">
+                  Uncheck to strip sensitive trading revenue/drawdowns
+                </p>
+              </div>
+              <input
+                id="share-financials"
+                name="includeFinancials"
+                type="checkbox"
+                checked={includeFinancials}
+                onChange={(e) => setIncludeFinancials(e.target.checked)}
+                className="h-4 w-4 rounded accent-primary"
+              />
+            </label>
+
+            <label
+              htmlFor="share-audit-history"
+              className="flex items-center justify-between text-xs cursor-pointer"
+            >
+              <div>
+                <span className="font-semibold text-foreground">
+                  Include Audit History Logs
+                </span>
+                <p className="text-[11px] text-muted-foreground">
+                  Include retroactive correction timestamps and adjustments
+                </p>
+              </div>
+              <input
+                id="share-audit-history"
+                name="includeAuditHistory"
+                type="checkbox"
+                checked={includeAuditHistory}
+                onChange={(e) => setIncludeAuditHistory(e.target.checked)}
+                className="h-4 w-4 rounded accent-primary"
+              />
+            </label>
+          </div>
+
+          <Button
+            onClick={handleCreateShare}
+            className="w-full text-xs font-semibold flex items-center justify-center gap-2"
+          >
+            <Key className="h-3.5 w-3.5" />
+            Generate Tokenized Share Snapshot
+          </Button>
+        </div>
+
+        {/* Active Grants List */}
+        <div className="space-y-3 pt-1">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Active Sharing Grants ({sharedReports.length})
+            </h3>
+          </div>
+
+          {sharedReports.length === 0 ? (
+            <div className="p-6 text-center border border-dashed rounded-2xl border-glass-border text-xs text-muted-foreground">
+              No active report tokens generated yet. Configure a permission
+              grant above to share this period.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {sharedReports.map((share) => (
+                <div
+                  key={share.id}
+                  className="p-3.5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 border border-glass-border bg-secondary/20"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-xs text-foreground">
+                        {share.recipient || "Unlabeled Grant"}
+                      </span>
+                      <Badge className="text-[10px] uppercase">
+                        {share.permissionLevel.replace(/_/g, " ")}
+                      </Badge>
+                      {share.includeFinancials && (
+                        <Badge className="text-[10px] border-warning/30 text-warning bg-warning/10">
+                          +Financials
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground font-mono">
+                      <span>Token: {share.shareToken.slice(0, 16)}...</span>
+                      <span>•</span>
+                      <span>
+                        {share.expiresAt
+                          ? `Expires ${share.expiresAt.slice(0, 10)}`
+                          : "No Expiration"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="glass"
+                      size="sm"
+                      onClick={() => handleCopyLink(share)}
+                      className="text-xs h-7 px-2.5 flex items-center gap-1.5"
+                    >
+                      {copiedToken === share.shareToken ? (
+                        <>
+                          <Check className="h-3 w-3 text-success" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3" />
+                          Copy Link
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="glass"
+                      size="sm"
+                      onClick={() => handleCopyMarkdownDigest(share)}
+                      className="text-xs h-7 px-2.5 flex items-center gap-1.5"
+                    >
+                      {copiedToken === share.id ? (
+                        <>
+                          <Check className="h-3 w-3 text-success" />
+                          Digest Copied
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3 text-primary" />
+                          Markdown
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRevoke(share.id)}
+                      aria-label="Revoke share"
+                      className="text-xs h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </Modal>
   );
 }

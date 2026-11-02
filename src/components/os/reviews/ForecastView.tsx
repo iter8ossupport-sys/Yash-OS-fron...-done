@@ -84,7 +84,10 @@ export function ForecastView() {
     return d.toISOString().slice(0, 10);
   }, [simulatedWeeks]);
 
-  const forecastHistory = state.forecastHistory ?? [];
+  const forecastHistory = useMemo(
+    () => state.forecastHistory ?? [],
+    [state.forecastHistory],
+  );
 
   const calibrationStats = useMemo(() => {
     const delivered = forecastHistory.filter((f) => f.status === "delivered");

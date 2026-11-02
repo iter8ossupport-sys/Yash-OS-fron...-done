@@ -83,8 +83,12 @@ yash-os/
 │   ├── assets/                # Core brand artwork (hero imagery, orb logo)
 │   ├── components/
 │   │   ├── os/                # Yash OS core components
-│   │   │   ├── reviews/       # Review views (Daily, Weekly, Monthly, AnalyticsHub, etc.)
-│   │   │   ├── settings/      # Settings module sections (Profile, Appearance, Workspace, etc.)
+│   │   │   ├── execute/       # Active timer card, execution task lists, strategic context bar, finish & closeout dialogs
+│   │   │   ├── knowledge/     # Knowledge cards, format filters, and editor/select/viewer modals
+│   │   │   ├── plan/          # 7-step daily planning workflow stages, task cards, and plan nav sidebar
+│   │   │   ├── projects/      # Project cards, detailed inspector modal, create modal, and document editor
+│   │   │   ├── reviews/       # Review views (Daily, Weekly, Monthly, AnalyticsHub) and settings/ configuration tabs
+│   │   │   ├── settings/      # Settings module sections (Profile, Appearance, Workspace, Security, etc.)
 │   │   │   ├── AppShell.tsx   # Global shell (sidebar, navigation, profile header)
 │   │   │   ├── GoalsPanel.tsx # Goals & Milestones slide-over modal
 │   │   │   ├── ProfileAvatar.tsx # Reusable circular profile avatar with fallback initials
@@ -94,12 +98,14 @@ yash-os/
 │   ├── lib/
 │   │   ├── os/                # Core domain business logic
 │   │   │   ├── reviews/       # Review calculators, analytics, migrations, and export
+│   │   │   ├── types/         # Partitioned domain types (core, projects, knowledge, reviews)
 │   │   │   ├── avatar.ts      # Profile image validation, crop & client-side compression
+│   │   │   ├── duration.ts    # Duration parsing & conversion utilities
 │   │   │   ├── knowledge.ts   # Knowledge serialization, format validation & badges
 │   │   │   ├── logic.ts       # Priority synchronization, task selection, time budgets
 │   │   │   ├── seed.ts        # Initial seed state and factory defaults
 │   │   │   ├── store.tsx      # React Context state store with LocalStorage persistence
-│   │   │   └── types.ts       # Central TypeScript domain interfaces
+│   │   │   └── types.ts       # Backward-compatible central domain type barrel
 │   │   └── utils.ts           # Class merging utilities (clsx + tailwind-merge)
 │   ├── routes/                # File-based TanStack routes
 │   │   ├── __root.tsx         # Application root layout with error boundary & Toaster

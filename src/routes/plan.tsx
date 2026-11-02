@@ -1,50 +1,26 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  Check,
-  ChevronDown,
-  Flag,
-  AlertTriangle,
-  FolderGit2,
-  RefreshCw,
-  Sparkles,
-  BookMarked,
-  BookOpen,
-  X,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { useOS, fmtMin } from "@/lib/os/store";
+import { useOS } from "@/lib/os/store";
 import { approvePlan, setActiveProject } from "@/lib/os/logic";
 import { newDraft, recommendOutcomes, recommendTasks } from "@/lib/os/seed";
-import type {
-  DayType,
-  Energy,
-  KnowledgeItem,
-  Plan,
-  PriorityId,
-  Task,
-} from "@/lib/os/types";
-import { cn } from "@/lib/utils";
-import {
-  Badge,
-  Button,
-  Glass,
-  Input,
-  Label,
-  PageHeader,
-  PriorityIcon,
-  Segmented,
-  Textarea,
-  priorityTone,
-} from "@/components/os/ui";
-import { DurationInput } from "@/components/os/DurationInput";
+import type { KnowledgeItem, Plan, PriorityId, Task } from "@/lib/os/types";
+import { Badge, Button, Glass, PageHeader } from "@/components/os/ui";
 import { KnowledgeSelectModal } from "@/components/os/KnowledgeSelectModal";
 import { KnowledgeViewerModal } from "@/components/os/KnowledgeViewerModal";
-import { formatBadgeClass, getKnowledgeFormat } from "@/lib/os/knowledge";
+import {
+  IDS,
+  STAGES,
+  PlanNavSidebar,
+  PlanContextStep,
+  PlanPrioritiesStep,
+  PlanAllocationStep,
+  PlanOutcomesStep,
+  PlanRecommendationsStep,
+  PlanWorkloadStep,
+  PlanApprovalStep,
+} from "@/components/os/plan";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({
@@ -64,24 +40,6 @@ export const Route = createFileRoute("/plan")({
   }),
   component: PlanPage,
 });
-
-const STAGES = [
-  ["Daily Context", "Understand your day"],
-  ["Priority Context", "3 permanent priorities"],
-  ["Time Allocation", "Distribute work hours"],
-  ["Daily Outcomes", "One outcome per priority"],
-  ["Task Recommendations", "3 tasks per priority"],
-  ["Planned Workload", "Select & organise tasks"],
-  ["Final Approval", "Confirm and save plan"],
-] as const;
-const DAY_TYPES = [
-  "College Day",
-  "Non-College Day",
-  "Weekend/Holiday",
-  "Custom",
-] as const;
-const ENERGY = ["Low", "Medium", "High"] as const;
-const IDS: PriorityId[] = [1, 2, 3];
 
 function PlanPage() {
   const { state, update } = useOS();
@@ -143,7 +101,6 @@ function PlanPage() {
   }
 
   const ctx = draft.context;
-  const allocated = IDS.reduce((s, i) => s + draft.allocation[i], 0);
   const sel = draft.tasks.filter((t) => t.selected);
   const selMin = sel.reduce((s, t) => s + t.duration, 0);
   const perPriorityOk = IDS.every((i) => {
@@ -241,51 +198,7 @@ function PlanPage() {
         }
       />
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        <Glass className="h-fit p-3">
-          <ol className="space-y-1">
-            {STAGES.map(([t, sub], i) => {
-              const n = i + 1;
-              return (
-                <li key={t}>
-                  <button
-                    disabled={n > stage}
-                    onClick={() => setStage(n)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition",
-                      n === stage
-                        ? "bg-gradient-primary text-primary-foreground glow"
-                        : n < stage
-                          ? "hover:bg-accent"
-                          : "opacity-50",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
-                        n === stage
-                          ? "border-primary-foreground/50"
-                          : "border-glass-border",
-                      )}
-                    >
-                      {n < stage ? <Check className="h-3.5 w-3.5" /> : n}
-                    </span>
-                    <span>
-                      <span className="block text-sm font-medium">{t}</span>
-                      <span
-                        className={cn(
-                          "block text-[11px]",
-                          n === stage ? "opacity-80" : "text-muted-foreground",
-                        )}
-                      >
-                        {sub}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        </Glass>
+        <PlanNavSidebar stage={stage} onSelectStage={setStage} />
 
         <Glass className="p-6" key={stage}>
           <div className="fade-up">
@@ -298,879 +211,92 @@ function PlanPage() {
 
             {/* STEP 1: Daily Context */}
             {stage === 1 && (
-              <div className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label>Date</Label>
-                    <Input
-                      type="date"
-                      value={ctx.date}
-                      onChange={(e) =>
-                        setDraft((d) => ({
-                          ...d,
-                          context: { ...d.context, date: e.target.value },
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label>Day type</Label>
-                  <Segmented
-                    value={ctx.dayType}
-                    options={DAY_TYPES}
-                    onChange={(v: DayType) =>
-                      setDraft((d) => ({
-                        ...d,
-                        context: {
-                          ...d.context,
-                          dayType: v,
-                          hours: state.prefs.dayTypeHours[v],
-                        },
-                      }))
-                    }
-                  />
-                </div>
-                <div>
-                  <div className="flex justify-between">
-                    <Label>Available usable work hours</Label>
-                    <span className="text-sm font-semibold">
-                      {ctx.hours} hours
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={14}
-                    step={0.5}
-                    value={ctx.hours}
-                    aria-label="Available hours"
-                    className="w-full"
-                    onChange={(e) =>
-                      setDraft((d) => ({
-                        ...d,
-                        context: { ...d.context, hours: +e.target.value },
-                      }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Energy level</Label>
-                  <Segmented
-                    value={ctx.energy}
-                    options={ENERGY}
-                    onChange={(v: Energy) =>
-                      setDraft((d) => ({
-                        ...d,
-                        context: { ...d.context, energy: v },
-                      }))
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Fixed commitments (optional)</Label>
-                  <Textarea
-                    placeholder="e.g. College, meetings, family, travel…"
-                    value={ctx.commitments}
-                    onChange={(e) =>
-                      setDraft((d) => ({
-                        ...d,
-                        context: { ...d.context, commitments: e.target.value },
-                      }))
-                    }
-                  />
-                </div>
-              </div>
+              <PlanContextStep
+                draft={draft}
+                dayTypeHours={state.prefs.dayTypeHours}
+                onChangeDraft={setDraft}
+              />
             )}
 
-            {/* STEP 2: Priority Context (Refined Visual Hierarchy) */}
+            {/* STEP 2: Priority Context */}
             {stage === 2 && (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Review and verify your active projects, milestones, and
-                  bottlenecks under the three permanent priorities.
-                </p>
-                {state.priorities.map((p) => {
-                  const eligibleProjects = state.projects.filter(
-                    (proj) => proj.priorityId === p.id,
-                  );
-                  return (
-                    <div
-                      key={p.id}
-                      className={cn(
-                        "rounded-2xl border border-glass-border bg-secondary/40 p-5 shadow-sm transition hover:border-primary/40",
-                        p.id === 1
-                          ? "border-l-4 border-l-p1"
-                          : p.id === 2
-                            ? "border-l-4 border-l-p2"
-                            : "border-l-4 border-l-p3",
-                      )}
-                    >
-                      {/* Priority Header */}
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <PriorityIcon id={p.id} />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                Priority {p.id}
-                              </span>
-                              <h3 className="font-display text-base font-semibold">
-                                {p.name}
-                              </h3>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {p.purpose}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge>{p.status}</Badge>
-                      </div>
-
-                      {/* Active Project Highlight & Polished Selection Control */}
-                      <div className="mt-4 rounded-xl border border-glass-border bg-background/50 p-3.5">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <FolderGit2 className="h-4 w-4 text-cyan" />
-                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Active Project:
-                            </span>
-                            <span className="font-medium text-foreground">
-                              {p.project || "No active project"}
-                            </span>
-                          </div>
-                          {eligibleProjects.length > 0 && (
-                            <div className="flex items-center gap-2">
-                              <Label className="mb-0 text-[11px]">
-                                Switch project:
-                              </Label>
-                              <select
-                                value={p.activeProjectId || ""}
-                                aria-label={`Select active project for ${p.name}`}
-                                onChange={(e) =>
-                                  update((s) =>
-                                    setActiveProject(
-                                      s,
-                                      p.id,
-                                      e.target.value || null,
-                                    ),
-                                  )
-                                }
-                                className="h-8 rounded-lg border border-input bg-secondary/80 px-2 text-xs font-medium text-foreground outline-none transition focus:border-ring"
-                              >
-                                {eligibleProjects.map((proj) => (
-                                  <option
-                                    key={proj.id}
-                                    value={proj.id}
-                                    className="bg-popover text-foreground"
-                                  >
-                                    {proj.name} ({proj.status})
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Visually Separated Milestone and Bottleneck */}
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-xl border border-glass-border bg-secondary/30 p-3">
-                          <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-cyan">
-                            <Flag className="h-3.5 w-3.5" />
-                            <span>Current Milestone</span>
-                          </div>
-                          <div className="text-xs text-foreground/90">
-                            {p.milestone || "None set"}
-                          </div>
-                        </div>
-
-                        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
-                          <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-warning">
-                            <AlertTriangle className="h-3.5 w-3.5" />
-                            <span>Main Bottleneck</span>
-                          </div>
-                          <div className="text-xs text-foreground/90">
-                            {p.bottleneck || "No bottleneck specified"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                <p className="text-xs text-muted-foreground">
-                  Manage your portfolio in Projects or edit foundational goals
-                  in Settings.
-                </p>
-              </div>
+              <PlanPrioritiesStep
+                priorities={state.priorities}
+                projects={state.projects}
+                onSetActiveProject={(priorityId, projectId) =>
+                  update((s) => setActiveProject(s, priorityId, projectId))
+                }
+              />
             )}
 
             {/* STEP 3: Time Allocation */}
             {stage === 3 && (
-              <div className="space-y-5">
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  {[
-                    ["Available", ctx.hours],
-                    ["Allocated", allocated],
-                    ["Remaining", +(ctx.hours - allocated).toFixed(1)],
-                  ].map(([l, v]) => (
-                    <div key={l} className="rounded-2xl bg-secondary/40 p-4">
-                      <div
-                        className={cn(
-                          "font-display text-2xl font-semibold",
-                          l === "Remaining" &&
-                            v !== undefined &&
-                            +v < 0 &&
-                            "text-destructive",
-                        )}
-                      >
-                        {v}h
-                      </div>
-                      <div className="text-xs text-muted-foreground">{l}</div>
-                    </div>
-                  ))}
-                </div>
-                {state.priorities.map((p) => (
-                  <div key={p.id} className="flex items-center gap-4">
-                    <PriorityIcon id={p.id} />
-                    <div className="flex-1">
-                      <div className="flex justify-between text-sm">
-                        <span>{p.name}</span>
-                        <span className="font-semibold">
-                          {draft.allocation[p.id]}h
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={ctx.hours}
-                        step={0.5}
-                        value={draft.allocation[p.id]}
-                        aria-label={`${p.name} hours`}
-                        className="w-full"
-                        onChange={(e) =>
-                          setDraft((d) => ({
-                            ...d,
-                            allocation: {
-                              ...d.allocation,
-                              [p.id]: +e.target.value,
-                            },
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                ))}
-                {allocated > ctx.hours && (
-                  <p className="text-sm text-destructive">
-                    You've allocated more than your available hours.
-                  </p>
-                )}
-              </div>
+              <PlanAllocationStep
+                draft={draft}
+                priorities={state.priorities}
+                onChangeDraft={setDraft}
+              />
             )}
 
             {/* STEP 4: Daily Outcomes */}
             {stage === 4 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm text-muted-foreground">
-                    Proposed from your project context and milestones. Edit
-                    before approving.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      setDraft((d) => ({
-                        ...d,
-                        outcomes: recommendOutcomes(state.priorities),
-                      }))
-                    }
-                  >
-                    <RefreshCw className="h-3.5 w-3.5" />
-                    Regenerate
-                  </Button>
-                </div>
-                {state.priorities.map((p) => {
-                  const linkedKIds = draft.outcomeKnowledgeIds?.[p.id] || [];
-                  const linkedItems = state.knowledge.filter((k) =>
-                    linkedKIds.includes(k.id),
-                  );
-
-                  return (
-                    <div key={p.id} className="flex gap-4">
-                      <PriorityIcon id={p.id} />
-                      <div className="flex-1 space-y-2">
-                        <Label>
-                          #{p.id} {p.name} — {draft.allocation[p.id]}h
-                        </Label>
-                        <Textarea
-                          rows={2}
-                          value={draft.outcomes[p.id]}
-                          onChange={(e) =>
-                            setDraft((d) => ({
-                              ...d,
-                              outcomes: {
-                                ...d.outcomes,
-                                [p.id]: e.target.value,
-                              },
-                            }))
-                          }
-                        />
-
-                        {/* Linked Knowledge for this outcome */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {linkedItems.map((k) => {
-                              const fmt = getKnowledgeFormat(k);
-                              return (
-                                <span
-                                  key={k.id}
-                                  className={cn(
-                                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition cursor-pointer hover:brightness-110",
-                                    formatBadgeClass(fmt),
-                                  )}
-                                  onClick={() => setViewingKnowledge([k])}
-                                  title="Click to view details"
-                                >
-                                  <BookOpen className="h-3 w-3" />
-                                  <span className="max-w-[150px] truncate">
-                                    {k.title}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDraft((d) => ({
-                                        ...d,
-                                        outcomeKnowledgeIds: {
-                                          ...(d.outcomeKnowledgeIds || {}),
-                                          [p.id]: (
-                                            d.outcomeKnowledgeIds?.[p.id] || []
-                                          ).filter((id) => id !== k.id),
-                                        },
-                                      }));
-                                    }}
-                                    className="ml-1 hover:text-destructive"
-                                    title="Unlink"
-                                  >
-                                    <X className="h-2.5 w-2.5" />
-                                  </button>
-                                </span>
-                              );
-                            })}
-                          </div>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                            onClick={() => setLinkingOutcomePriorityId(p.id)}
-                          >
-                            <BookMarked className="h-3 w-3 mr-1" />
-                            {linkedItems.length > 0
-                              ? "Edit Knowledge Reference"
-                              : "+ Link Knowledge"}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <PlanOutcomesStep
+                draft={draft}
+                priorities={state.priorities}
+                knowledge={state.knowledge}
+                onChangeDraft={setDraft}
+                onLinkKnowledge={(pId) => setLinkingOutcomePriorityId(pId)}
+                onViewKnowledge={(items) => setViewingKnowledge(items)}
+              />
             )}
 
             {/* STEP 5: Task Recommendations */}
             {stage === 5 && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm text-muted-foreground">
-                    Three proposed tasks per priority (template suggestions —
-                    AI-ready).
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      setDraft((d) => ({
-                        ...d,
-                        tasks: recommendTasks(state.priorities),
-                      }))
-                    }
-                  >
-                    <RefreshCw className="h-3.5 w-3.5" />
-                    Regenerate
-                  </Button>
-                </div>
-                {state.priorities.map((p) => (
-                  <div key={p.id}>
-                    <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                      <PriorityIcon id={p.id} className="h-7 w-7" />#{p.id}{" "}
-                      {p.name}
-                    </div>
-                    <div className="space-y-2">
-                      {draft.tasks
-                        .filter((t) => t.priorityId === p.id)
-                        .map((t) => (
-                          <TaskCard key={t.id} t={t} />
-                        ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <PlanRecommendationsStep
+                draft={draft}
+                priorities={state.priorities}
+                onChangeDraft={setDraft}
+              />
             )}
 
-            {/* STEP 6: Planned Workload (Priority-Based Clean Layout) */}
+            {/* STEP 6: Planned Workload */}
             {stage === 6 && (
-              <div className="space-y-6">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm text-muted-foreground">
-                    Select 1–3 tasks per priority, edit task titles & durations,
-                    and arrange execution order.
-                  </p>
-                  <Badge
-                    className={
-                      perPriorityOk
-                        ? "border-success/30 text-success"
-                        : "border-destructive/30 text-destructive"
-                    }
-                  >
-                    {perPriorityOk
-                      ? "Selection rules satisfied"
-                      : "Select 1–3 tasks per priority"}
-                  </Badge>
-                </div>
-
-                <div className="space-y-6">
-                  {state.priorities.map((p) => {
-                    const pTasks = draft.tasks.filter(
-                      (t) => t.priorityId === p.id,
-                    );
-                    const pSelCount = pTasks.filter((t) => t.selected).length;
-                    const pSelMin = pTasks
-                      .filter((t) => t.selected)
-                      .reduce((sum, t) => sum + t.duration, 0);
-
-                    return (
-                      <div
-                        key={p.id}
-                        className={cn(
-                          "rounded-2xl border border-glass-border bg-secondary/30 p-5 shadow-sm",
-                          p.id === 1
-                            ? "border-t-2 border-t-p1"
-                            : p.id === 2
-                              ? "border-t-2 border-t-p2"
-                              : "border-t-2 border-t-p3",
-                        )}
-                      >
-                        {/* 1. Priority number and full priority name */}
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <PriorityIcon id={p.id} className="h-9 w-9" />
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-display font-semibold">
-                                  #{p.id} {p.name}
-                                </span>
-                                <Badge
-                                  className={
-                                    pSelCount >= 1 && pSelCount <= 3
-                                      ? "text-success"
-                                      : "text-destructive"
-                                  }
-                                >
-                                  {pSelCount} of {pTasks.length} selected (
-                                  {fmtMin(pSelMin)})
-                                </Badge>
-                              </div>
-                              {/* 2 & 3. Active project & milestone */}
-                              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                                <span>
-                                  <span className="font-medium text-foreground/80">
-                                    Project:
-                                  </span>{" "}
-                                  {p.project || "No active project"}
-                                </span>
-                                <span>·</span>
-                                <span>
-                                  <span className="font-medium text-foreground/80">
-                                    Milestone:
-                                  </span>{" "}
-                                  {p.milestone || "None set"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 4. Today's outcome in one clear, editable line */}
-                        <div className="mt-3">
-                          <Label className="mb-1 text-[11px]">
-                            Today's Outcome
-                          </Label>
-                          <Input
-                            value={draft.outcomes[p.id] || ""}
-                            onChange={(e) =>
-                              setDraft((d) => ({
-                                ...d,
-                                outcomes: {
-                                  ...d.outcomes,
-                                  [p.id]: e.target.value,
-                                },
-                              }))
-                            }
-                            aria-label={`Today's outcome for ${p.name}`}
-                            placeholder={`Define today's outcome for ${p.name}...`}
-                            className="h-9 bg-background/60"
-                          />
-                        </div>
-
-                        {/* 5. Three numbered task recommendations */}
-                        <div className="mt-4 space-y-2">
-                          {pTasks.map((t, idx) => {
-                            const taskKIds = t.knowledgeIds || [];
-                            const taskKnowledge = state.knowledge.filter((k) =>
-                              taskKIds.includes(k.id),
-                            );
-
-                            return (
-                              <div
-                                key={t.id}
-                                className={cn(
-                                  "flex flex-col gap-2 rounded-xl border border-glass-border p-3 transition sm:flex-row sm:items-center",
-                                  t.selected
-                                    ? "bg-secondary/60 shadow-sm ring-1 ring-primary/20"
-                                    : "bg-secondary/20 opacity-60",
-                                )}
-                              >
-                                <div className="flex items-center gap-3">
-                                  {/* Selection checkbox */}
-                                  <input
-                                    type="checkbox"
-                                    checked={t.selected}
-                                    aria-label={`Select task: ${t.title}`}
-                                    onChange={(e) =>
-                                      setTask(t.id, {
-                                        selected: e.target.checked,
-                                      })
-                                    }
-                                    className="h-4 w-4 rounded accent-primary"
-                                  />
-                                  {/* Task number (1, 2, 3) */}
-                                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-secondary/80 text-xs font-semibold text-muted-foreground">
-                                    {idx + 1}
-                                  </span>
-                                </div>
-
-                                {/* Editable task title and attached knowledge pills */}
-                                <div className="flex-1 min-w-[200px]">
-                                  <Input
-                                    value={t.title}
-                                    aria-label={`Task ${idx + 1} title`}
-                                    onChange={(e) =>
-                                      setTask(t.id, { title: e.target.value })
-                                    }
-                                    className="h-9"
-                                  />
-                                  {taskKnowledge.length > 0 && (
-                                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                                      {taskKnowledge.map((k) => {
-                                        const fmt = getKnowledgeFormat(k);
-                                        return (
-                                          <span
-                                            key={k.id}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setViewingKnowledge([k]);
-                                            }}
-                                            className={cn(
-                                              "inline-flex items-center gap-1 rounded-full border px-2 py-0.2 text-[10px] font-medium transition cursor-pointer hover:brightness-110",
-                                              formatBadgeClass(fmt),
-                                            )}
-                                            title="Click to view full knowledge"
-                                          >
-                                            <BookOpen className="h-2.5 w-2.5" />
-                                            <span className="max-w-[140px] truncate">
-                                              {k.title}
-                                            </span>
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setTask(t.id, {
-                                                  knowledgeIds: (
-                                                    t.knowledgeIds || []
-                                                  ).filter((id) => id !== k.id),
-                                                });
-                                              }}
-                                              className="ml-0.5 hover:text-destructive"
-                                              title="Unlink"
-                                            >
-                                              <X className="h-2 w-2" />
-                                            </button>
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* One simple editable duration/timeline input with automatic unit detection */}
-                                <div className="w-full sm:w-48 shrink-0">
-                                  <DurationInput
-                                    value={t.duration}
-                                    onChange={(min) =>
-                                      setTask(t.id, { duration: min })
-                                    }
-                                    ariaLabel={`Duration for ${t.title}`}
-                                  />
-                                </div>
-
-                                {/* Ascending / descending ordering controls & Link Knowledge */}
-                                <div className="flex items-center gap-1 self-end sm:self-center">
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    aria-label="Link knowledge"
-                                    onClick={() => setLinkingTaskId(t.id)}
-                                    title="Link principles, methods, or frameworks to this task"
-                                    className={cn(
-                                      "h-8 w-8",
-                                      taskKnowledge.length > 0
-                                        ? "text-cyan"
-                                        : "text-muted-foreground hover:text-foreground",
-                                    )}
-                                  >
-                                    <BookMarked className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    aria-label="Move task up"
-                                    disabled={idx === 0}
-                                    onClick={() =>
-                                      movePriorityTask(p.id, idx, idx - 1)
-                                    }
-                                    className="h-8 w-8"
-                                  >
-                                    <ArrowUp className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    aria-label="Move task down"
-                                    disabled={idx === pTasks.length - 1}
-                                    onClick={() =>
-                                      movePriorityTask(p.id, idx, idx + 1)
-                                    }
-                                    className="h-8 w-8"
-                                  >
-                                    <ArrowDown className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Bottom Workload Summary Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-glass-border bg-secondary/40 p-4 text-sm">
-                  <div className="flex flex-wrap items-center gap-6">
-                    <div>
-                      <span className="text-muted-foreground">
-                        Total Selected:{" "}
-                      </span>
-                      <span className="font-semibold">{sel.length} tasks</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">
-                        Planned Workload:{" "}
-                      </span>
-                      <span className="font-semibold text-primary">
-                        {fmtMin(selMin)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">
-                        Available Time:{" "}
-                      </span>
-                      <span className="font-semibold">{ctx.hours}h</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Remaining: </span>
-                      <span
-                        className={cn(
-                          "font-semibold",
-                          selMin > ctx.hours * 60
-                            ? "text-destructive"
-                            : "text-success",
-                        )}
-                      >
-                        {fmtMin(Math.max(0, ctx.hours * 60 - selMin))}
-                      </span>
-                    </div>
-                  </div>
-                  {!perPriorityOk && (
-                    <span className="text-xs font-semibold text-destructive">
-                      Rule: Each of the 3 priorities requires between 1 and 3
-                      selected tasks.
-                    </span>
-                  )}
-                </div>
-              </div>
+              <PlanWorkloadStep
+                draft={draft}
+                priorities={state.priorities}
+                knowledge={state.knowledge}
+                perPriorityOk={perPriorityOk}
+                sel={sel}
+                selMin={selMin}
+                onChangeTask={setTask}
+                onChangeOutcome={(pId, text) =>
+                  setDraft((d) => ({
+                    ...d,
+                    outcomes: { ...d.outcomes, [pId]: text },
+                  }))
+                }
+                onMovePriorityTask={movePriorityTask}
+                onLinkTaskKnowledge={(taskId) => setLinkingTaskId(taskId)}
+                onViewKnowledge={(items) => setViewingKnowledge(items)}
+              />
             )}
 
-            {/* STEP 7: Final Approval (Clean Hierarchy & Editable Workload) */}
+            {/* STEP 7: Final Approval */}
             {stage === 7 && (
-              <div className="space-y-6">
-                {/* Top Metrics Cards */}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {[
-                    ["Date", ctx.date],
-                    ["Total Tasks", `${sel.length} selected`],
-                    ["Planned Duration", fmtMin(selMin)],
-                    [
-                      "Remaining Time",
-                      fmtMin(Math.max(0, ctx.hours * 60 - selMin)),
-                    ],
-                  ].map(([label, val]) => (
-                    <div
-                      key={label}
-                      className="rounded-2xl border border-glass-border bg-secondary/40 p-4"
-                    >
-                      <div className="font-display text-xl font-semibold text-foreground">
-                        {val}
-                      </div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">
-                        {label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-5">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                    Workload Grouped by Priority
-                  </h3>
-
-                  {state.priorities.map((p) => {
-                    const pTasks = sel.filter((t) => t.priorityId === p.id);
-                    return (
-                      <div
-                        key={p.id}
-                        className="rounded-2xl border border-glass-border bg-secondary/40 p-5"
-                      >
-                        {/* Priority number, name & active project */}
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-2.5">
-                            <PriorityIcon id={p.id} className="h-8 w-8" />
-                            <div>
-                              <div className="font-display font-semibold">
-                                #{p.id} {p.name}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                Active Project:{" "}
-                                <span className="font-medium text-foreground">
-                                  {p.project || "None"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <Badge>{pTasks.length} tasks</Badge>
-                        </div>
-
-                        {/* Today's outcome, editable before approval */}
-                        <div className="mt-3">
-                          <Label className="mb-1 text-[11px]">
-                            Today's Outcome (editable before approval)
-                          </Label>
-                          <Input
-                            value={draft.outcomes[p.id]}
-                            aria-label={`Outcome for ${p.name}`}
-                            onChange={(e) =>
-                              setDraft((d) => ({
-                                ...d,
-                                outcomes: {
-                                  ...d.outcomes,
-                                  [p.id]: e.target.value,
-                                },
-                              }))
-                            }
-                            className="h-9 bg-background/60"
-                          />
-                        </div>
-
-                        {/* Selected tasks in execution order */}
-                        <div className="mt-3 space-y-2">
-                          {pTasks.map((t) => {
-                            const globalIndex = sel.findIndex(
-                              (x) => x.id === t.id,
-                            );
-                            return (
-                              <div
-                                key={t.id}
-                                className="flex flex-col gap-2 rounded-xl border border-glass-border bg-background/40 p-3 sm:flex-row sm:items-center"
-                              >
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-secondary/80 text-xs font-semibold text-muted-foreground">
-                                  {globalIndex + 1}
-                                </span>
-                                <div className="flex-1 min-w-[200px]">
-                                  <Input
-                                    value={t.title}
-                                    aria-label={`Task title`}
-                                    onChange={(e) =>
-                                      setTask(t.id, { title: e.target.value })
-                                    }
-                                    className="h-8 text-xs"
-                                  />
-                                </div>
-                                <div className="w-full sm:w-44 shrink-0">
-                                  <DurationInput
-                                    value={t.duration}
-                                    onChange={(min) =>
-                                      setTask(t.id, { duration: min })
-                                    }
-                                    ariaLabel={`Duration for ${t.title}`}
-                                  />
-                                </div>
-                                <div className="flex items-center gap-1 self-end sm:self-center">
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    aria-label="Move task up in execution order"
-                                    disabled={globalIndex === 0}
-                                    onClick={() => moveSelectedTask(t.id, -1)}
-                                    className="h-8 w-8"
-                                  >
-                                    <ArrowUp className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    aria-label="Move task down in execution order"
-                                    disabled={globalIndex === sel.length - 1}
-                                    onClick={() => moveSelectedTask(t.id, 1)}
-                                    className="h-8 w-8"
-                                  >
-                                    <ArrowDown className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <p className="text-xs text-muted-foreground">
-                  Approving saves the plan. It will not start any task
-                  automatically.
-                </p>
-              </div>
+              <PlanApprovalStep
+                draft={draft}
+                priorities={state.priorities}
+                sel={sel}
+                selMin={selMin}
+                onChangeOutcome={(pId, text) =>
+                  setDraft((d) => ({
+                    ...d,
+                    outcomes: { ...d.outcomes, [pId]: text },
+                  }))
+                }
+                onChangeTask={setTask}
+                onMoveSelectedTask={moveSelectedTask}
+              />
             )}
 
             {/* Step Navigation Controls */}
@@ -1240,47 +366,6 @@ function PlanPage() {
           onClose={() => setViewingKnowledge(null)}
           items={viewingKnowledge}
         />
-      )}
-    </div>
-  );
-}
-
-function TaskCard({ t }: { t: Task }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="rounded-2xl border border-glass-border bg-secondary/40 p-3">
-      <button
-        className="flex w-full items-center justify-between gap-3 text-left"
-        onClick={() => setOpen(!open)}
-      >
-        <div>
-          <div className="text-sm font-medium">{t.title}</div>
-          <div className="text-xs text-muted-foreground">
-            {fmtMin(t.duration)} · Output: {t.expectedOutput}
-          </div>
-        </div>
-        <ChevronDown
-          className={cn(
-            "h-4 w-4 shrink-0 transition-transform",
-            open && "rotate-180",
-          )}
-        />
-      </button>
-      {open && (
-        <div className="mt-3 grid gap-2 text-xs animate-in fade-in slide-in-from-top-1 sm:grid-cols-2">
-          <div>
-            <b>Success criteria:</b> {t.successCriteria}
-          </div>
-          <div>
-            <b>What:</b> {t.what}
-          </div>
-          <div>
-            <b>How:</b> {t.how}
-          </div>
-          <div>
-            <b>Where:</b> {t.where}
-          </div>
-        </div>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import type { PriorityId } from "./core";
+import type { Metric, PriorityId, TaskKind } from "./core";
 
 export interface ProjectDoc {
   id: string;
@@ -9,6 +9,211 @@ export interface ProjectDoc {
 }
 
 export type ProjectStatus = "active" | "paused" | "completed" | "archived";
+
+/** Six predefined founder lifecycle phases */
+export type PredefinedLifecyclePhase =
+  | "idea_discovery" // Phase 1: Exploring problem space & founder-market fit
+  | "problem_validation" // Phase 2: User interviews & acute pain discovery
+  | "solution_validation" // Phase 3: Prototypes, LOIs, early commitments
+  | "build_delivery" // Phase 4: Active engineering, MVP deployment & iteration
+  | "growth_scaling" // Phase 5: Distribution, repeatable sales & retention
+  | "fundraising_team"; // Phase 6: Capital allocation & team expansion
+
+/** Custom phase extension allowing user-defined phases without weakening enum safety */
+export interface CustomLifecyclePhase {
+  id: string;
+  name: string;
+  description: string;
+  order: number;
+}
+
+export type LifecyclePhase = PredefinedLifecyclePhase | string;
+
+/** Project-level Major Goal entity */
+export interface ProjectGoal {
+  id: string;
+  projectId: string;
+  text: string;
+  metrics: Metric[];
+  targetDeadline?: string | undefined;
+  status: "active" | "achieved" | "superseded" | "abandoned";
+  createdAt: string; // ISO 8601
+  achievedAt?: string | undefined; // ISO 8601
+  supersededBy?: string | undefined; // ProjectGoal.id
+  notes?: string | undefined;
+}
+
+/** Milestone lifecycle status */
+export type MilestoneStatus =
+  "pending" | "active" | "completed" | "blocked" | "abandoned";
+
+/** Audit record required when activating more than one concurrent milestone */
+export interface MilestoneApprovalRecord {
+  approvedBy: string; // e.g. "Founder"
+  approvedAt: string; // ISO 8601
+  reason: string; // Explicit architectural justification for concurrency
+}
+
+/** Granular milestone entity */
+export interface Milestone {
+  id: string;
+  projectId: string;
+  title: string;
+  objective: string;
+  metrics: Metric[];
+  deadline: string;
+  status: MilestoneStatus;
+  order: number;
+  isPrimaryActive: boolean; // Exactly one primary active milestone
+  additionalActiveApproval?: MilestoneApprovalRecord | undefined; // Required if multiple active
+  completedAt?: string | undefined;
+  createdAt: string;
+}
+
+/** Strictly classified 5 + 1 document types */
+export type ProjectDocumentType =
+  | "project_brief" // Doc 1: Flexible content
+  | "execution_plan" // Doc 2: Structured execution plan
+  | "evidence_experiments" // Doc 3: Flexible content
+  | "decisions_history" // Doc 4: Flexible content
+  | "methods_knowledge" // Doc 5: Flexible content
+  | "legal_compliance" // Doc 6 (Fintech only): Structured + flexible
+  | "legacy_unclassified"; // Fallback for pre-v3 user documents
+
+export interface FlexibleDocumentContent {
+  markdown: string;
+  lastEditedBy?: string | undefined;
+  tags?: string[] | undefined;
+}
+
+export interface DocumentVersionSnapshot {
+  version: number;
+  snapshotAt: string; // ISO 8601
+  reason?: string | undefined;
+  content: FlexibleDocumentContent | Record<string, unknown>;
+}
+
+export interface PlanOutcomeItem {
+  id: string;
+  text: string;
+  successCriteria: string;
+  status: "pending" | "achieved" | "missed";
+  targetDeadline?: string | undefined;
+  evidenceNotes?: string | undefined;
+}
+
+export interface ExecutionPlanOutcomeHorizon {
+  monthly: PlanOutcomeItem[];
+  weekly: PlanOutcomeItem[];
+  daily: PlanOutcomeItem[];
+}
+
+export interface RecommendedTaskTemplate {
+  id: string;
+  milestoneId: string;
+  title: string;
+  duration: number; // minutes
+  kind: TaskKind;
+  expectedOutput: string;
+  successCriteria: string;
+  what: string;
+  how: string;
+  where: string;
+}
+
+export interface PlanRevisionRecord {
+  id: string;
+  version: number;
+  proposedAt: string; // ISO 8601
+  proposedBy: "founder" | "ai_recommendation" | "review_closeout";
+  reason: string;
+  evidenceReferences: string[]; // URLs, ReviewBottleneck.id, or DayRecord dates
+  status: "proposed" | "approved" | "rejected";
+  approvedAt?: string | undefined; // ISO 8601
+  approvedBy?: string | undefined;
+  rejectionReason?: string | undefined;
+  snapshot: {
+    outcomes: ExecutionPlanOutcomeHorizon;
+    recommendedTasks: RecommendedTaskTemplate[];
+  };
+}
+
+export interface StructuredExecutionPlan {
+  projectId: string;
+  activeGoalId: string;
+  activeMilestoneIds: string[];
+
+  // 1. Original Plan Baseline (Immutable founder benchmark)
+  originalBaseline: {
+    setAt: string;
+    goalSnapshotText: string;
+    milestoneTitles: string[];
+    outcomes: ExecutionPlanOutcomeHorizon;
+  };
+
+  // 2. Current Approved Plan (Active operational driver)
+  currentApproved: {
+    version: number;
+    approvedAt: string;
+    outcomes: ExecutionPlanOutcomeHorizon;
+    recommendedTasks: RecommendedTaskTemplate[];
+  };
+
+  // 3. Proposed Revisions & Audit Trail
+  proposedRevisions: PlanRevisionRecord[];
+
+  // 4. Actual Execution Cross-References (Read-only aggregate linkage)
+  actualExecutionRefs?:
+    | {
+        recordedDayDates: string[];
+        linkedSnapshotIds: string[];
+      }
+    | undefined;
+}
+
+export type ComplianceRequirementStatus =
+  | "verified_requirement" // Officially confirmed statute/rule
+  | "potential_requirement" // Under legal exploration
+  | "unresolved_question" // Flagged for legal counsel/regulatory clarity
+  | "reviewed_requirement"; // Assessed and mitigated
+
+export interface ComplianceItem {
+  id: string;
+  jurisdiction: string; // e.g. "US (SEC/CFTC)", "EU (MiCA)", "India (SEBI/RBI)"
+  domain:
+    | "data_privacy"
+    | "licensing"
+    | "terms_of_service"
+    | "aml_kyc"
+    | "ip_copyright";
+  summary: string;
+  details: string;
+  status: ComplianceRequirementStatus;
+  reviewedAt?: string | undefined;
+  referenceUrl?: string | undefined;
+}
+
+export interface LegalComplianceContent {
+  frameworkSummary: string;
+  requirements: ComplianceItem[];
+  lastAuditDate?: string | undefined;
+  legalCounselNotes?: string | undefined;
+}
+
+export interface ProjectDocument {
+  id: string;
+  projectId: string;
+  type: ProjectDocumentType;
+  title: string;
+  content: string; // Unified markdown/text content for backward compatibility
+  flexibleContent?: FlexibleDocumentContent | undefined;
+  executionPlan?: StructuredExecutionPlan | undefined;
+  complianceContent?: LegalComplianceContent | undefined;
+  version: number; // Incremented on explicit milestone/founder save
+  createdAt: string;
+  updatedAt: string;
+  history?: DocumentVersionSnapshot[] | undefined;
+}
 
 export interface Project {
   id: string;
@@ -29,7 +234,14 @@ export interface Project {
   deadline?: string | undefined;
   workstream?: "A" | "B" | undefined;
   learningCategories?: string[] | undefined;
-  docs?: ProjectDoc[] | undefined;
+  docs?: (ProjectDoc | ProjectDocument)[] | undefined;
+
+  // Schema v3 enhancements
+  lifecyclePhase?: LifecyclePhase | undefined;
+  customPhases?: CustomLifecyclePhase[] | undefined;
+  activeGoalId?: string | undefined;
+  goalsHistory?: ProjectGoal[] | undefined;
+  milestones?: Milestone[] | undefined;
 }
 
 export interface ProjectPerformanceSummary {

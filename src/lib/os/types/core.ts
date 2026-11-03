@@ -28,6 +28,9 @@ export interface DayContext {
 export interface Task {
   id: string;
   priorityId: PriorityId;
+  projectId?: string | undefined;
+  milestoneId?: string | undefined;
+  planOutcomeId?: string | undefined;
   title: string;
   duration: number; // minutes
   timeBlock: string;
@@ -73,6 +76,8 @@ export interface Goals {
 
 import type { Project } from "./projects";
 import type { KnowledgeItem } from "./knowledge";
+import type { TradingOperation } from "./trading";
+import type { LearningKnowledgeSystem } from "./learning";
 import type {
   DayRecord,
   ForecastSnapshot,
@@ -104,9 +109,14 @@ export interface OSState {
   plan: Plan | null;
   activeTaskId: string | null;
   interruptedTaskId: string | null;
+
+  // Master Repositories
   projects: Project[];
+  tradingOperation?: TradingOperation | undefined;
+  learningSystem?: LearningKnowledgeSystem | undefined;
   knowledge: KnowledgeItem[];
   history: DayRecord[];
+
   prefs: {
     timer: boolean;
     notifications: boolean;

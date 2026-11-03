@@ -10,3 +10,5 @@ export * from "./MilestoneAssessmentModal";
 export * from "./ProjectDocumentsTab";
 export * from "./ProjectExecutionPlanTab";
 export * from "./ProjectPerformanceTab";
+export * from "./LegalComplianceEditorModal";
+export * from "./Priority2CashflowSection";

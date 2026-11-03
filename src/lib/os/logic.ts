@@ -5,7 +5,19 @@ import type {
   Plan,
   PriorityId,
   Project,
+  ProjectDoc,
+  ProjectDocument,
   Task,
+  TradingOperatingProfile,
+  FinancialTransitionPlan,
+  TradingStrategy,
+  TradingSystem,
+  TradingAccount,
+  TradingExecutionRecord,
+  FinancialPerformanceRecord,
+  TradingRiskIncident,
+  TradingDevelopmentStage,
+  LegalComplianceContent,
 } from "./types";
 
 export const elapsed = (t: Task, now = Date.now()) =>
@@ -532,3 +544,377 @@ export {
   resolveBottleneck,
   updateReviewSettings,
 } from "./reviews/operations";
+
+/**
+ * Updates the Trading Operating Profile (Doc 1) on the consolidated TradingOperation.
+ */
+export function updateTradingOperatingProfile(
+  s: OSState,
+  profileUpdates: Partial<TradingOperatingProfile>,
+): OSState {
+  if (!s.tradingOperation) return s;
+  const current = s.tradingOperation.operatingProfile;
+  const updatedProfile: TradingOperatingProfile = {
+    ...current,
+    ...profileUpdates,
+    riskRules: {
+      ...current.riskRules,
+      ...(profileUpdates.riskRules ?? {}),
+    },
+    routines: {
+      ...current.routines,
+      ...(profileUpdates.routines ?? {}),
+    },
+    version: current.version + 1,
+    updatedAt: new Date().toISOString(),
+  };
+
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      operatingProfile: updatedProfile,
+      currentStage:
+        updatedProfile.developmentStage ?? s.tradingOperation.currentStage,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Updates the Financial & Transition Plan (Doc 2) on the consolidated TradingOperation.
+ */
+export function updateFinancialTransitionPlan(
+  s: OSState,
+  planUpdates: Partial<FinancialTransitionPlan>,
+): OSState {
+  if (!s.tradingOperation) return s;
+  const current = s.tradingOperation.financialPlan;
+  const updatedPlan: FinancialTransitionPlan = {
+    ...current,
+    ...planUpdates,
+    cashAllocationPolicy: {
+      livingExpensesPercent: 40,
+      startupReinvestmentPercent: 30,
+      capitalBufferPercent: 20,
+      taxReservePercent: 10,
+      ...(current.cashAllocationPolicy ?? {}),
+      ...(planUpdates.cashAllocationPolicy ?? {}),
+    },
+    version: current.version + 1,
+    updatedAt: new Date().toISOString(),
+  };
+
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      financialPlan: updatedPlan,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Adds or updates a Trading Strategy on TradingOperation.
+ */
+export function saveTradingStrategy(
+  s: OSState,
+  strategy: TradingStrategy,
+): OSState {
+  if (!s.tradingOperation) return s;
+  const strategies = s.tradingOperation.strategies ?? [];
+  const exists = strategies.some((x) => x.id === strategy.id);
+  const updated = exists
+    ? strategies.map((x) => (x.id === strategy.id ? strategy : x))
+    : [...strategies, strategy];
+
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      strategies: updated,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Deletes a Trading Strategy and flags or dissociates child systems.
+ */
+export function deleteTradingStrategy(s: OSState, strategyId: string): OSState {
+  if (!s.tradingOperation) return s;
+  const strategies = (s.tradingOperation.strategies ?? []).filter(
+    (x) => x.id !== strategyId,
+  );
+  const systems = (s.tradingOperation.systems ?? []).map((sys) =>
+    sys.strategyId === strategyId ? { ...sys, strategyId: "" } : sys,
+  );
+
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      strategies,
+      systems,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Adds or updates a Trading System linked to a strategy.
+ */
+export function saveTradingSystem(s: OSState, system: TradingSystem): OSState {
+  if (!s.tradingOperation) return s;
+  const systems = s.tradingOperation.systems ?? [];
+  const exists = systems.some((x) => x.id === system.id);
+  const updated = exists
+    ? systems.map((x) => (x.id === system.id ? system : x))
+    : [...systems, system];
+
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      systems: updated,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Deletes a Trading System.
+ */
+export function deleteTradingSystem(s: OSState, systemId: string): OSState {
+  if (!s.tradingOperation) return s;
+  const systems = (s.tradingOperation.systems ?? []).filter(
+    (x) => x.id !== systemId,
+  );
+
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      systems,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Adds or updates a Trading Account.
+ */
+export function saveTradingAccount(
+  s: OSState,
+  account: TradingAccount,
+): OSState {
+  if (!s.tradingOperation) return s;
+  const accounts = s.tradingOperation.accounts ?? [];
+  const exists = accounts.some((x) => x.id === account.id);
+  const updated = exists
+    ? accounts.map((x) => (x.id === account.id ? account : x))
+    : [...accounts, account];
+
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      accounts: updated,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Deletes a Trading Account.
+ */
+export function deleteTradingAccount(s: OSState, accountId: string): OSState {
+  if (!s.tradingOperation) return s;
+  const accounts = (s.tradingOperation.accounts ?? []).filter(
+    (x) => x.id !== accountId,
+  );
+
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      accounts,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Records a daily trading execution record.
+ */
+export function recordTradingSession(
+  s: OSState,
+  sessionRecord: TradingExecutionRecord,
+): OSState {
+  if (!s.tradingOperation) return s;
+  const records = s.tradingOperation.executionRecords ?? [];
+  const exists = records.some((x) => x.id === sessionRecord.id);
+  const updated = exists
+    ? records.map((x) => (x.id === sessionRecord.id ? sessionRecord : x))
+    : [sessionRecord, ...records];
+
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      executionRecords: updated,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Records a financial performance extraction record and recalculates runway months.
+ */
+export function recordFinancialPerformance(
+  s: OSState,
+  perfRecord: FinancialPerformanceRecord,
+): OSState {
+  if (!s.tradingOperation) return s;
+  const history = s.tradingOperation.performanceHistory ?? [];
+  const exists = history.some((x) => x.id === perfRecord.id);
+  const updated = exists
+    ? history.map((x) => (x.id === perfRecord.id ? perfRecord : x))
+    : [perfRecord, ...history];
+
+  const latestNet = perfRecord.totalNetCashExtracted;
+  const livingExp =
+    s.tradingOperation.financialPlan.monthlyLivingExpenses ?? 2500;
+  const runway =
+    livingExp > 0
+      ? Number((perfRecord.injectedToStartupFund / livingExp).toFixed(1))
+      : 6;
+
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      financialPlan: {
+        ...s.tradingOperation.financialPlan,
+        currentMonthlyCashflow: latestNet,
+        estimatedCurrentRunwayMonths: Math.max(
+          s.tradingOperation.financialPlan.estimatedCurrentRunwayMonths,
+          runway,
+        ),
+        version: s.tradingOperation.financialPlan.version + 1,
+        updatedAt: new Date().toISOString(),
+      },
+      performanceHistory: updated,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Records a risk or discipline incident audit item.
+ */
+export function recordRiskIncident(
+  s: OSState,
+  incident: TradingRiskIncident,
+): OSState {
+  if (!s.tradingOperation) return s;
+  const incidents = s.tradingOperation.riskIncidents ?? [];
+  const exists = incidents.some((x) => x.id === incident.id);
+  const updated = exists
+    ? incidents.map((x) => (x.id === incident.id ? incident : x))
+    : [incident, ...incidents];
+
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      riskIncidents: updated,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Updates trading operation stage.
+ */
+export function updateTradingStage(
+  s: OSState,
+  stage: TradingDevelopmentStage,
+): OSState {
+  if (!s.tradingOperation) return s;
+  return {
+    ...s,
+    tradingOperation: {
+      ...s.tradingOperation,
+      currentStage: stage,
+      operatingProfile: {
+        ...s.tradingOperation.operatingProfile,
+        developmentStage: stage,
+        version: s.tradingOperation.operatingProfile.version + 1,
+        updatedAt: new Date().toISOString(),
+      },
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Saves Document 6 (Legal & Compliance) on a Priority 2 Workstream B project.
+ */
+export function saveLegalComplianceContent(
+  s: OSState,
+  projectId: string,
+  complianceContent: LegalComplianceContent,
+): OSState {
+  const now = new Date().toISOString();
+  const updatedProjects = s.projects.map((proj) => {
+    if (proj.id !== projectId) return proj;
+
+    const currentDocs = proj.docs ?? [];
+    const legalDocIndex = currentDocs.findIndex(
+      (d) => "type" in d && (d as ProjectDocument).type === "legal_compliance",
+    );
+
+    let updatedDocs: (ProjectDocument | ProjectDoc)[];
+    if (legalDocIndex >= 0) {
+      const existing = currentDocs[legalDocIndex] as ProjectDocument;
+      const updatedDoc: ProjectDocument = {
+        ...existing,
+        complianceContent,
+        version: (existing.version ?? 1) + 1,
+        updatedAt: now,
+      };
+      updatedDocs = [
+        ...currentDocs.slice(0, legalDocIndex),
+        updatedDoc,
+        ...currentDocs.slice(legalDocIndex + 1),
+      ];
+    } else {
+      const newDoc: ProjectDocument = {
+        id: `doc-legal-${proj.id}`,
+        projectId: proj.id,
+        type: "legal_compliance",
+        title: "Legal & Compliance",
+        content:
+          "Fintech regulatory posture, non-custodial boundaries, jurisdiction mapping, and disclosures.",
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+        complianceContent,
+      };
+      updatedDocs = [...currentDocs, newDoc];
+    }
+
+    return {
+      ...proj,
+      complianceContent,
+      docs: updatedDocs,
+    };
+  });
+
+  return {
+    ...s,
+    projects: updatedProjects,
+  };
+}

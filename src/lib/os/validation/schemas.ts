@@ -205,6 +205,176 @@ export const ComplianceItemSchema = z.object({
 export const LegalComplianceContentSchema = z.object({
   frameworkSummary: z.string().default(""),
   requirements: z.array(ComplianceItemSchema).default([]),
+  productClassification: z
+    .object({
+      category: z.enum([
+        "non_custodial_tool",
+        "analytics_dashboard",
+        "trade_journal",
+        "signal_service",
+        "algo_execution",
+        "ria_advisory",
+      ]),
+      custodyStatus: z.enum([
+        "non_custodial",
+        "third_party_custody",
+        "custodial",
+      ]),
+      regulatoryRole: z.enum([
+        "technology_provider",
+        "educational_publisher",
+        "registered_entity",
+      ]),
+      classificationRationale: z.string().default(""),
+    })
+    .optional(),
+  jurisdictions: z
+    .array(
+      z.object({
+        jurisdictionCode: z.string(),
+        regulatoryBody: z.string(),
+        applicableRegime: z.string(),
+        targetLaunchPhase: z.enum([
+          "tier_1_launch",
+          "tier_2_expansion",
+          "restricted_blocked",
+        ]),
+        complianceStatus: z.enum([
+          "compliant",
+          "in_review",
+          "unverified",
+          "exempt",
+        ]),
+        notes: z.string().optional(),
+      }),
+    )
+    .optional(),
+  licensing: z
+    .array(
+      z.object({
+        id: z.string(),
+        licenseType: z.string(),
+        thresholdCriteria: z.string(),
+        status: z.enum([
+          "verified_requirement",
+          "potential_requirement",
+          "unresolved_question",
+          "reviewed_requirement",
+        ]),
+        actionRequired: z.string(),
+        statutoryReference: z.string().optional(),
+      }),
+    )
+    .optional(),
+  privacyAndData: z
+    .object({
+      dataClassification: z.enum([
+        "public",
+        "pseudonymous_trading_data",
+        "financial_records",
+        "pii_sensitive",
+      ]),
+      storageRegime: z.enum([
+        "local_first_only",
+        "client_encrypted",
+        "cloud_synced",
+      ]),
+      applicableStatutes: z.array(z.string()).default([]),
+      dataRetentionPolicy: z.string().default(""),
+      redactionRules: z.string().default(""),
+    })
+    .optional(),
+  disclosures: z
+    .array(
+      z.object({
+        id: z.string(),
+        disclosureTitle: z.string(),
+        requiredPlacement: z.enum([
+          "pre_signup",
+          "modal_confirmation",
+          "footer_all_pages",
+          "export_watermark",
+        ]),
+        text: z.string(),
+        status: z.enum([
+          "verified_requirement",
+          "potential_requirement",
+          "unresolved_question",
+          "reviewed_requirement",
+        ]),
+      }),
+    )
+    .optional(),
+  thirdPartyObligations: z
+    .array(
+      z.object({
+        id: z.string(),
+        counterparty: z.string(),
+        agreementType: z.enum([
+          "api_terms_of_service",
+          "developer_agreement",
+          "data_redistribution_license",
+        ]),
+        restrictions: z.array(z.string()).default([]),
+        auditFrequency: z.string(),
+        status: z.enum([
+          "verified_requirement",
+          "potential_requirement",
+          "unresolved_question",
+          "reviewed_requirement",
+        ]),
+      }),
+    )
+    .optional(),
+  evidence: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        evidenceType: z.enum([
+          "counsel_memo",
+          "audit_report",
+          "statute_text",
+          "tos_acceptance",
+          "screenshot",
+        ]),
+        referenceUrlOrDoc: z.string(),
+        dateRecorded: z.string(),
+        verificationMethod: z.string(),
+      }),
+    )
+    .optional(),
+  unresolvedQuestions: z
+    .array(
+      z.object({
+        id: z.string(),
+        question: z.string(),
+        impactSeverity: z.enum([
+          "blocking_mvp",
+          "blocking_public_launch",
+          "scaling_limitation",
+          "low_risk",
+        ]),
+        hypothesizedAnswer: z.string(),
+        requiredExpertise: z.enum([
+          "securities_lawyer",
+          "tax_accountant",
+          "privacy_officer",
+          "fintech_counsel",
+        ]),
+        status: z.enum(["open", "assigned", "clarified", "resolved"]),
+      }),
+    )
+    .optional(),
+  professionalReview: z
+    .object({
+      counselNameOrFirm: z.string().optional(),
+      lastFormalReviewDate: z.string().optional(),
+      nextScheduledReviewDate: z.string().optional(),
+      counselOpinionSummary: z.string().optional(),
+      disclaimerOfNonLegalAdvice: z.string().default(""),
+    })
+    .optional(),
   lastAuditDate: z.string().optional(),
   legalCounselNotes: z.string().optional(),
 });
@@ -254,6 +424,9 @@ export const ProjectSchema = z
     goalsHistory: z.array(ProjectGoalSchema).optional(),
     milestones: z.array(MilestoneSchema).optional(),
     executionPlan: StructuredExecutionPlanSchema.optional(),
+    complianceContent: LegalComplianceContentSchema.optional(),
+    workstream: z.enum(["A", "B"]).optional(),
+    learningCategories: z.array(z.string()).optional(),
     docs: z.array(z.any()).optional(),
     createdAt: z.string(),
   })
@@ -332,21 +505,46 @@ export const TradingOperationSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   status: z.enum(["active", "paused"]),
+  currentStage: z
+    .enum([
+      "research",
+      "backtesting",
+      "paper_simulation",
+      "evaluation",
+      "live_funded",
+      "scaling",
+    ])
+    .optional(),
   operatingProfile: z.object({
     id: z.string().min(1),
     title: z.string(),
     marketFocus: z.array(z.string()),
     coreEdgeDescription: z.string(),
+    developmentStage: z
+      .enum([
+        "research",
+        "backtesting",
+        "paper_simulation",
+        "evaluation",
+        "live_funded",
+        "scaling",
+      ])
+      .optional(),
     riskRules: z.object({
       maxDailyDrawdownCurrency: z.number(),
       maxTrailingDrawdownPercent: z.number(),
       maxRiskPerTradePercent: z.number(),
       hardStopRequired: z.boolean(),
       leverageOrContractLimit: z.string(),
+      maxConsecutiveLosses: z.number().optional(),
+      circuitBreakerAction: z
+        .enum(["stop_for_day", "halve_risk", "review_required"])
+        .optional(),
     }),
     routines: z.object({
       preMarketPrepChecklist: z.array(z.string()),
       postMarketReviewChecklist: z.array(z.string()),
+      inTradeExecutionChecklist: z.array(z.string()).optional(),
     }),
     flexibleContent: z.string(),
     version: z.number(),
@@ -357,15 +555,28 @@ export const TradingOperationSchema = z.object({
     title: z.string(),
     targetMonthlyCashflow: z.number(),
     currentMonthlyCashflow: z.number(),
+    monthlyLivingExpenses: z.number().optional(),
     startupRunwayMonthsTarget: z.number(),
     estimatedCurrentRunwayMonths: z.number(),
+    cashAllocationPolicy: z
+      .object({
+        livingExpensesPercent: z.number(),
+        startupReinvestmentPercent: z.number(),
+        capitalBufferPercent: z.number(),
+        taxReservePercent: z.number(),
+      })
+      .optional(),
     transitionMilestones: z.array(
       z.object({
         id: z.string().min(1),
         phase: z.string(),
         targetCapital: z.number(),
         monthlyYieldTarget: z.number(),
+        prerequisitesSummary: z.string().optional(),
+        transitionTriggerConditions: z.array(z.string()).optional(),
         achieved: z.boolean(),
+        achievedAt: z.string().optional(),
+        achievementEvidence: z.string().optional(),
       }),
     ),
     flexibleContent: z.string(),
@@ -378,6 +589,7 @@ export const TradingOperationSchema = z.object({
   experiments: z.array(z.any()).default([]),
   executionRecords: z.array(z.any()).default([]),
   performanceHistory: z.array(z.any()).default([]),
+  riskIncidents: z.array(z.any()).default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

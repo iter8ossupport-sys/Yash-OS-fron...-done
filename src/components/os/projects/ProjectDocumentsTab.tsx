@@ -6,12 +6,14 @@ export interface ProjectDocumentsTabProps {
   draft: Project;
   onOpenDocEditor: (doc: ProjectDoc | ProjectDocument) => void;
   onOpenStructuredPlan: () => void;
+  onOpenComplianceEditor?: () => void;
 }
 
 export function ProjectDocumentsTab({
   draft,
   onOpenDocEditor,
   onOpenStructuredPlan,
+  onOpenComplianceEditor,
 }: ProjectDocumentsTabProps) {
   const docs = (draft.docs ?? []) as (ProjectDoc | ProjectDocument)[];
 
@@ -229,7 +231,11 @@ export function ProjectDocumentsTab({
                 size="sm"
                 variant="glass"
                 className="w-full text-xs"
-                onClick={() => onOpenDocEditor(complianceDoc)}
+                onClick={() =>
+                  onOpenComplianceEditor
+                    ? onOpenComplianceEditor()
+                    : onOpenDocEditor(complianceDoc)
+                }
               >
                 Open Compliance Tracker
               </Button>

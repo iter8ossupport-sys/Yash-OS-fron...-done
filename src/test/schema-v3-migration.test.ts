@@ -18,9 +18,9 @@ import {
 import type { DayRecord, OSState, Project } from "../lib/os/types";
 
 describe("Phase 1: Schema v3 Foundation & Migration Tests", () => {
-  it("declares SCHEMA_V3_VERSION as 3 and CURRENT_SCHEMA_VERSION as 4", () => {
+  it("declares SCHEMA_V3_VERSION as 3 and CURRENT_SCHEMA_VERSION as 5", () => {
     expect(SCHEMA_V3_VERSION).toBe(3);
-    expect(CURRENT_SCHEMA_VERSION).toBe(4);
+    expect(CURRENT_SCHEMA_VERSION).toBe(5);
   });
 
   it("migrates raw legacy state to Schema v3 with all defaults and master repositories", () => {

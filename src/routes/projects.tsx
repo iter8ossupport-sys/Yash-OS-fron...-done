@@ -3,7 +3,12 @@ import { useState } from "react";
 import { ArrowDown, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useOS } from "@/lib/os/store";
-import { saveProject, deleteProject, setActiveProject } from "@/lib/os/logic";
+import {
+  saveProject,
+  deleteProject,
+  setActiveProject,
+  recordTradingSession,
+} from "@/lib/os/logic";
 import type {
   PriorityId,
   Project,
@@ -18,7 +23,13 @@ import {
   ProjectDetailsModal,
   CreateProjectModal,
   ProjectDocumentEditorModal,
+  Priority2CashflowSection,
+  LegalComplianceEditorModal,
 } from "@/components/os/projects";
+import {
+  TradingOperationModal,
+  RecordTradingSessionModal,
+} from "@/components/os/trading";
 
 export const Route = createFileRoute("/projects")({
   head: () => ({
@@ -55,6 +66,12 @@ function ProjectsPage() {
     project: Project;
     doc: ProjectDoc | ProjectDocument | null;
   } | null>(null);
+
+  const [isTradingModalOpen, setIsTradingModalOpen] = useState(false);
+  const [isRecordSessionOpen, setIsRecordSessionOpen] = useState(false);
+  const [complianceProject, setComplianceProject] = useState<Project | null>(
+    null,
+  );
 
   const activeProject = activeDetailsProjectId
     ? (state.projects.find((p) => p.id === activeDetailsProjectId) ?? null)
@@ -107,6 +124,66 @@ function ProjectsPage() {
       {/* 1. MAIN LAYOUT — THREE HORIZONTAL PRIORITIES */}
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
         {PRIORITIES_META.map((meta) => {
+          if (meta.id === 2) {
+            return (
+              <div key={meta.id} className="flex min-w-0 flex-col gap-3">
+                <Glass
+                  className={cn(
+                    "relative border-t-2 p-5 transition-colors",
+                    meta.borderClass,
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <PriorityIcon id={meta.id} />
+                      <div>
+                        <h2 className="font-display text-base font-semibold text-foreground tracking-tight">
+                          {meta.fullName}
+                        </h2>
+                        <span className="text-xs text-muted-foreground">
+                          Priority 2A & 2B Infrastructure
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => setIsTradingModalOpen(true)}
+                      aria-label="Open Trading Workspace"
+                    >
+                      Workspace
+                    </Button>
+                  </div>
+                  <p className="mt-3 text-xs leading-relaxed text-muted-foreground/90">
+                    {meta.purpose}
+                  </p>
+                </Glass>
+                <div className="flex items-center justify-center py-0.5">
+                  <div
+                    className={cn(
+                      "flex h-7 w-7 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-all hover:scale-105",
+                      meta.arrowClass,
+                    )}
+                    title="Projects belonging to Priority #2"
+                    aria-hidden="true"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5 stroke-[2.2]" />
+                  </div>
+                </div>
+                <Priority2CashflowSection
+                  projects={state.projects}
+                  tradingOperation={state.tradingOperation}
+                  onOpenTradingWorkspace={() => setIsTradingModalOpen(true)}
+                  onOpenRecordSession={() => setIsRecordSessionOpen(true)}
+                  onOpenProjectDetails={(id) => setActiveDetailsProjectId(id)}
+                  onOpenCreateFintechProject={() => openCreateModal(2)}
+                  onOpenComplianceTracker={(proj) => setComplianceProject(proj)}
+                />
+              </div>
+            );
+          }
+
           const priorityProjects = state.projects.filter(
             (p) => p.priorityId === meta.id,
           );
@@ -259,6 +336,39 @@ function ProjectsPage() {
             handleSaveProject({ ...docModal.project, docs: updatedDocs });
             setDocModal(null);
             toast.success("Document deleted");
+          }}
+        />
+      )}
+
+      {/* Trading Operation Modal */}
+      {isTradingModalOpen && (
+        <TradingOperationModal
+          open={isTradingModalOpen}
+          onClose={() => setIsTradingModalOpen(false)}
+        />
+      )}
+
+      {/* Fast Record Daily Session Modal */}
+      {isRecordSessionOpen && state.tradingOperation && (
+        <RecordTradingSessionModal
+          tradingOperation={state.tradingOperation}
+          onClose={() => setIsRecordSessionOpen(false)}
+          onSave={(rec) => {
+            update((s) => recordTradingSession(s, rec));
+            setIsRecordSessionOpen(false);
+          }}
+        />
+      )}
+
+      {/* Standalone Legal & Compliance Editor Modal */}
+      {complianceProject && (
+        <LegalComplianceEditorModal
+          open={Boolean(complianceProject)}
+          project={complianceProject}
+          onClose={() => setComplianceProject(null)}
+          onSave={(updated) => {
+            handleSaveProject(updated);
+            setComplianceProject(null);
           }}
         />
       )}

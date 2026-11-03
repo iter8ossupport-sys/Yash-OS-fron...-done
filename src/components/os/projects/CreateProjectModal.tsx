@@ -5,16 +5,19 @@ import { today, uid } from "@/lib/os/seed";
 import { cn } from "@/lib/utils";
 import { Button, Input, Label, Modal, Textarea } from "@/components/os/ui";
 import type { PriorityId, Project } from "@/lib/os/types";
+import { ensureWorkstreamBDocuments } from "@/lib/os/logic";
 import { PRIORITIES_META, SUGGESTED_LEARNING_CATEGORIES } from "./projectsMeta";
 
 export interface CreateProjectModalProps {
   defaultPriority: PriorityId | null;
+  defaultWorkstream?: "A" | "B" | null;
   onClose: () => void;
   onCreate: (p: Project) => void;
 }
 
 export function CreateProjectModal({
   defaultPriority,
+  defaultWorkstream,
   onClose,
   onCreate,
 }: CreateProjectModalProps) {
@@ -25,7 +28,9 @@ export function CreateProjectModal({
   );
 
   // Priority 2 required workstream
-  const [workstream, setWorkstream] = useState<"A" | "B" | null>(null);
+  const [workstream, setWorkstream] = useState<"A" | "B" | null>(
+    defaultWorkstream ?? null,
+  );
 
   // Priority 3 optional learning categories
   const [learningCategories, setLearningCategories] = useState<string[]>([]);
@@ -61,7 +66,7 @@ export function CreateProjectModal({
       return;
     }
 
-    const newProject: Project = {
+    const newProject: Project = ensureWorkstreamBDocuments({
       id: uid(),
       name: name.trim(),
       objective: objective.trim(),
@@ -80,7 +85,7 @@ export function CreateProjectModal({
       workstream: priorityId === 2 ? workstream! : undefined,
       learningCategories: priorityId === 3 ? learningCategories : undefined,
       docs: [],
-    };
+    });
 
     onCreate(newProject);
     toast.success("Project created");

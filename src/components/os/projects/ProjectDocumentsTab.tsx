@@ -29,6 +29,53 @@ export function ProjectDocumentsTab({
   const decisionsDoc = getDocByType("decisions_history");
   const methodsDoc = getDocByType("methods_knowledge");
   const complianceDoc = getDocByType("legal_compliance");
+  const isWorkstreamB = draft.priorityId === 2 && draft.workstream === "B";
+
+  const now = new Date().toISOString();
+  const getBrief = () =>
+    briefDoc || {
+      id: `doc-brief-${draft.id}`,
+      projectId: draft.id,
+      type: "project_brief" as const,
+      title: "Project Brief",
+      content: draft.objective || "",
+      version: 1,
+      createdAt: draft.createdAt || now,
+      updatedAt: now,
+    };
+  const getEvidence = () =>
+    evidenceDoc || {
+      id: `doc-evidence-${draft.id}`,
+      projectId: draft.id,
+      type: "evidence_experiments" as const,
+      title: "Evidence & Experiments",
+      content: draft.evidence || "",
+      version: 1,
+      createdAt: draft.createdAt || now,
+      updatedAt: now,
+    };
+  const getDecisions = () =>
+    decisionsDoc || {
+      id: `doc-decisions-${draft.id}`,
+      projectId: draft.id,
+      type: "decisions_history" as const,
+      title: "Decisions & History",
+      content: draft.decisions || "",
+      version: 1,
+      createdAt: draft.createdAt || now,
+      updatedAt: now,
+    };
+  const getMethods = () =>
+    methodsDoc || {
+      id: `doc-methods-${draft.id}`,
+      projectId: draft.id,
+      type: "methods_knowledge" as const,
+      title: "Methods & Knowledge",
+      content: draft.learning || "",
+      version: 1,
+      createdAt: draft.createdAt || now,
+      updatedAt: now,
+    };
 
   const execPlan = draft.executionPlan;
   const monthlyCount = execPlan?.currentApproved.outcomes.monthly.length ?? 0;
@@ -41,14 +88,19 @@ export function ProjectDocumentsTab({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-glass-border/50 pb-3">
         <div>
           <h3 className="font-semibold text-sm text-foreground">
-            Five Standardized Project Documents
+            {isWorkstreamB
+              ? "Six Standardized Project Documents (Fintech Operations)"
+              : "Five Standardized Project Documents"}
           </h3>
           <p className="text-xs text-muted-foreground">
-            Foundational knowledge, structured execution plans, market proof and
-            decisions.
+            {isWorkstreamB
+              ? "Foundational knowledge, structured plans, evidence, decisions, methods, and regulatory governance."
+              : "Foundational knowledge, structured execution plans, market proof and decisions."}
           </p>
         </div>
-        <Badge className="text-xs px-2.5 py-0.5">Docs 5/5 Standardized</Badge>
+        <Badge className="text-xs px-2.5 py-0.5">
+          {isWorkstreamB ? "Docs 6/6 Standardized" : "Docs 5/5 Standardized"}
+        </Badge>
       </div>
 
       <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -74,7 +126,7 @@ export function ProjectDocumentsTab({
               size="sm"
               variant="glass"
               className="w-full text-xs"
-              onClick={() => briefDoc && onOpenDocEditor(briefDoc)}
+              onClick={() => onOpenDocEditor(getBrief())}
             >
               Open / Edit Brief
             </Button>
@@ -143,7 +195,7 @@ export function ProjectDocumentsTab({
               size="sm"
               variant="glass"
               className="w-full text-xs"
-              onClick={() => evidenceDoc && onOpenDocEditor(evidenceDoc)}
+              onClick={() => onOpenDocEditor(getEvidence())}
             >
               Open / Edit Evidence
             </Button>
@@ -172,7 +224,7 @@ export function ProjectDocumentsTab({
               size="sm"
               variant="glass"
               className="w-full text-xs"
-              onClick={() => decisionsDoc && onOpenDocEditor(decisionsDoc)}
+              onClick={() => onOpenDocEditor(getDecisions())}
             >
               Open / Edit Decisions
             </Button>
@@ -201,43 +253,46 @@ export function ProjectDocumentsTab({
               size="sm"
               variant="glass"
               className="w-full text-xs"
-              onClick={() => methodsDoc && onOpenDocEditor(methodsDoc)}
+              onClick={() => onOpenDocEditor(getMethods())}
             >
               Open / Edit Methods
             </Button>
           </div>
         </div>
 
-        {/* Doc 6 (Fintech Only): Legal & Compliance */}
-        {complianceDoc && (
-          <div className="flex flex-col justify-between rounded-xl border border-cyan/30 bg-cyan/5 p-4 transition-all hover:border-cyan/50 hover:bg-cyan/10">
+        {/* Doc 6 (Workstream B Fintech Only): Legal & Compliance */}
+        {isWorkstreamB && (
+          <div className="flex flex-col justify-between rounded-xl border border-cyan/40 bg-cyan/10 p-4 transition-all hover:border-cyan/60 hover:bg-cyan/15">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-sm text-cyan flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4 text-cyan" />
                   6. Legal & Compliance
                 </span>
-                <span className="text-[10px] text-muted-foreground font-mono">
-                  v{complianceDoc.version ?? 1}
+                <span className="text-[10px] text-cyan/80 font-mono">
+                  v{complianceDoc?.version ?? 1}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
-                {complianceDoc.content ||
-                  "Fintech regulatory requirements, licensing rules, and terms of service."}
+                {complianceDoc?.content ||
+                  draft.complianceContent?.frameworkSummary ||
+                  "Fintech regulatory boundary, licensing exemptions, disclosures, data governance, and counsel review."}
               </p>
             </div>
             <div className="pt-3">
               <Button
                 size="sm"
-                variant="glass"
+                variant="primary"
                 className="w-full text-xs"
                 onClick={() =>
                   onOpenComplianceEditor
                     ? onOpenComplianceEditor()
-                    : onOpenDocEditor(complianceDoc)
+                    : complianceDoc
+                      ? onOpenDocEditor(complianceDoc)
+                      : undefined
                 }
               >
-                Open Compliance Tracker
+                Open Legal & Compliance Tracker
               </Button>
             </div>
           </div>

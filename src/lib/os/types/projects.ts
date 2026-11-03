@@ -255,9 +255,126 @@ export interface ComplianceItem {
   referenceUrl?: string | undefined;
 }
 
+export interface JurisdictionTrackingRecord {
+  jurisdictionCode: string; // e.g. "US", "UK", "EU", "IN"
+  regulatoryBody: string; // e.g. "SEC / CFTC", "FCA", "SEBI"
+  applicableRegime: string;
+  targetLaunchPhase:
+    "tier_1_launch" | "tier_2_expansion" | "restricted_blocked";
+  complianceStatus: "compliant" | "in_review" | "unverified" | "exempt";
+  notes?: string | undefined;
+}
+
+export interface LicensingRequirementItem {
+  id: string;
+  licenseType: string; // e.g. "RIA Registration", "CTA", "Technology Publisher"
+  thresholdCriteria: string;
+  status: ComplianceRequirementStatus;
+  actionRequired: string;
+  statutoryReference?: string | undefined;
+}
+
+export interface MandatoryDisclosureItem {
+  id: string;
+  disclosureTitle: string; // e.g. "CFTC Rule 4.41 Disclaimer"
+  requiredPlacement:
+    | "pre_signup"
+    | "modal_confirmation"
+    | "footer_all_pages"
+    | "export_watermark";
+  text: string;
+  status: ComplianceRequirementStatus;
+}
+
+export interface ThirdPartyObligationItem {
+  id: string;
+  counterparty: string; // e.g. "Broker API", "Market Data Vendor"
+  agreementType:
+    | "api_terms_of_service"
+    | "developer_agreement"
+    | "data_redistribution_license";
+  restrictions: string[];
+  auditFrequency: string;
+  status: ComplianceRequirementStatus;
+}
+
+export interface ComplianceEvidenceItem {
+  id: string;
+  title: string;
+  evidenceType:
+    | "counsel_memo"
+    | "audit_report"
+    | "statute_text"
+    | "tos_acceptance"
+    | "screenshot";
+  referenceUrlOrDoc: string;
+  dateRecorded: string;
+  verificationMethod: string;
+}
+
+export interface UnresolvedComplianceQuestion {
+  id: string;
+  question: string;
+  impactSeverity:
+    | "blocking_mvp"
+    | "blocking_public_launch"
+    | "scaling_limitation"
+    | "low_risk";
+  hypothesizedAnswer: string;
+  requiredExpertise:
+    | "securities_lawyer"
+    | "tax_accountant"
+    | "privacy_officer"
+    | "fintech_counsel";
+  status: "open" | "assigned" | "clarified" | "resolved";
+}
+
+export interface ProductClassificationDetails {
+  category:
+    | "non_custodial_tool"
+    | "analytics_dashboard"
+    | "trade_journal"
+    | "signal_service"
+    | "algo_execution"
+    | "ria_advisory";
+  custodyStatus: "non_custodial" | "third_party_custody" | "custodial";
+  regulatoryRole:
+    "technology_provider" | "educational_publisher" | "registered_entity";
+  classificationRationale: string;
+}
+
+export interface PrivacyAndDataGovernance {
+  dataClassification:
+    | "public"
+    | "pseudonymous_trading_data"
+    | "financial_records"
+    | "pii_sensitive";
+  storageRegime: "local_first_only" | "client_encrypted" | "cloud_synced";
+  applicableStatutes: string[];
+  dataRetentionPolicy: string;
+  redactionRules: string;
+}
+
+export interface ProfessionalLegalReviewDetails {
+  counselNameOrFirm?: string | undefined;
+  lastFormalReviewDate?: string | undefined;
+  nextScheduledReviewDate?: string | undefined;
+  counselOpinionSummary?: string | undefined;
+  disclaimerOfNonLegalAdvice: string;
+}
+
 export interface LegalComplianceContent {
   frameworkSummary: string;
-  requirements: ComplianceItem[];
+  productClassification?: ProductClassificationDetails | undefined;
+  jurisdictions?: JurisdictionTrackingRecord[] | undefined;
+  licensing?: LicensingRequirementItem[] | undefined;
+  privacyAndData?: PrivacyAndDataGovernance | undefined;
+  disclosures?: MandatoryDisclosureItem[] | undefined;
+  thirdPartyObligations?: ThirdPartyObligationItem[] | undefined;
+  evidence?: ComplianceEvidenceItem[] | undefined;
+  unresolvedQuestions?: UnresolvedComplianceQuestion[] | undefined;
+  professionalReview?: ProfessionalLegalReviewDetails | undefined;
+  requirements?: ComplianceItem[] | undefined;
   lastAuditDate?: string | undefined;
   legalCounselNotes?: string | undefined;
 }
@@ -306,6 +423,7 @@ export interface Project {
   goalsHistory?: ProjectGoal[] | undefined; // Non-authoritative backward compatibility mirror (projected from goals)
   milestones?: Milestone[] | undefined;
   executionPlan?: StructuredExecutionPlan | undefined; // Authoritative structured plan (v4)
+  complianceContent?: LegalComplianceContent | undefined;
 }
 
 export interface ProjectPerformanceSummary {

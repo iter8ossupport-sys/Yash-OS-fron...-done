@@ -15,8 +15,8 @@ import {
 import type { OSState, Project, Task } from "../lib/os/types";
 
 describe("Phase 2: Schema v4 Migration & Architecture Tests", () => {
-  it("1. declares CURRENT_SCHEMA_VERSION as 4", () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(4);
+  it("1. declares CURRENT_SCHEMA_VERSION as 5", () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(5);
     expect(SCHEMA_V4_VERSION).toBe(4);
   });
 
@@ -148,7 +148,8 @@ describe("Phase 2: Schema v4 Migration & Architecture Tests", () => {
     const migrated = migrateOSState(v3State);
 
     // Schema version must be 4
-    expect(migrated.schemaVersion).toBe(4);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrateOSStateV4(v3State).schemaVersion).toBe(4);
 
     // Existing projects and identifiers preserved
     expect(migrated.projects.length).toBe(1);
@@ -318,8 +319,8 @@ describe("Phase 2: Schema v4 Migration & Architecture Tests", () => {
     const firstPass = migrateOSState(raw);
     const secondPass = migrateOSState(firstPass);
 
-    expect(firstPass.schemaVersion).toBe(4);
-    expect(secondPass.schemaVersion).toBe(4);
+    expect(firstPass.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(secondPass.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(secondPass.projects.length).toBe(firstPass.projects.length);
     expect(secondPass.projects[0]?.id).toBe(firstPass.projects[0]?.id);
     expect(secondPass.projects[0]?.executionPlan?.projectId).toBe(

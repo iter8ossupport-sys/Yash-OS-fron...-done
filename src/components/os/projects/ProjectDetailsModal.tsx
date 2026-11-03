@@ -19,6 +19,7 @@ import { ProjectGoalsMilestonesTab } from "./ProjectGoalsMilestonesTab";
 import { ProjectDocumentsTab } from "./ProjectDocumentsTab";
 import { ProjectExecutionPlanTab } from "./ProjectExecutionPlanTab";
 import { ProjectPerformanceTab } from "./ProjectPerformanceTab";
+import { LegalComplianceEditorModal } from "./LegalComplianceEditorModal";
 
 export interface ProjectDetailsModalProps {
   project: Project;
@@ -48,6 +49,7 @@ export function ProjectDetailsModal({
 }: ProjectDetailsModalProps) {
   const [draft, setDraft] = useState<Project>(project);
   const [activeTab, setActiveTab] = useState<ProjectDetailTabId>("overview");
+  const [showComplianceModal, setShowComplianceModal] = useState(false);
   const [customCatInput, setCustomCatInput] = useState("");
 
   const handleSaveDraft = () => {
@@ -222,6 +224,7 @@ export function ProjectDetailsModal({
             draft={draft}
             onOpenDocEditor={onOpenDocEditor}
             onOpenStructuredPlan={() => setActiveTab("execution_plan")}
+            onOpenComplianceEditor={() => setShowComplianceModal(true)}
           />
         )}
 
@@ -258,6 +261,18 @@ export function ProjectDetailsModal({
           </div>
         </div>
       </div>
+      {/* Legal & Compliance Editor Modal */}
+      {showComplianceModal && (
+        <LegalComplianceEditorModal
+          open={showComplianceModal}
+          project={draft}
+          onClose={() => setShowComplianceModal(false)}
+          onSave={(updated) => {
+            setDraft(updated);
+            setShowComplianceModal(false);
+          }}
+        />
+      )}
     </Modal>
   );
 }

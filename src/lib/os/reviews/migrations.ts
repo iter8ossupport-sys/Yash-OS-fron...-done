@@ -9,6 +9,12 @@ import type {
   StructuredExecutionPlan,
   Task,
   TradingOperation,
+  TradingOperatingProfile,
+  TradingRiskRules,
+  TradingRoutines,
+  FinancialTransitionPlan,
+  TransitionMilestone,
+  LegalComplianceContent,
   LearningKnowledgeSystem,
 } from "../types";
 import { initialState } from "../seed";
@@ -16,8 +22,9 @@ import { syncPrioritiesWithProjects } from "../logic";
 import { defaultReviewSettings } from "./fixtures";
 
 export const SCHEMA_V3_VERSION = 3;
-export const CURRENT_SCHEMA_VERSION = 4;
 export const SCHEMA_V4_VERSION = 4;
+export const SCHEMA_V5_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 /**
  * Upgrades a single DayRecord from legacy schema to schema v2/v3.
@@ -362,6 +369,7 @@ export function migrateLbesToTradingOperation(
     id: "trading-op-lbes",
     name: legacyLbes?.name || "LBES Cashflow Operation",
     status: legacyLbes?.status === "paused" ? "paused" : "active",
+    currentStage: "paper_simulation",
     operatingProfile: {
       id: "profile-lbes-1",
       title: "Trading Operating Profile",
@@ -400,7 +408,14 @@ export function migrateLbesToTradingOperation(
       targetMonthlyCashflow: 5000,
       currentMonthlyCashflow: 0,
       startupRunwayMonthsTarget: 12,
+      monthlyLivingExpenses: 2500,
       estimatedCurrentRunwayMonths: 6,
+      cashAllocationPolicy: {
+        livingExpensesPercent: 40,
+        startupReinvestmentPercent: 30,
+        capitalBufferPercent: 20,
+        taxReservePercent: 10,
+      },
       transitionMilestones: [
         {
           id: "tm-1",
@@ -457,6 +472,7 @@ export function migrateLbesToTradingOperation(
     experiments: [],
     executionRecords: [],
     performanceHistory: [],
+    riskIncidents: [],
     createdAt,
     updatedAt: now,
   };
@@ -884,5 +900,333 @@ export function migrateOSStateV4(raw: unknown): OSState {
   });
 }
 
+/**
+ * Creates a standardized initial Legal & Compliance document for Priority 2 Workstream B fintech projects.
+ */
+export function createDefaultLegalComplianceDoc(
+  projectId: string,
+  createdAt: string,
+): ProjectDocument {
+  const now = new Date().toISOString();
+  return {
+    id: `doc-legal-${projectId}`,
+    projectId,
+    type: "legal_compliance",
+    title: "Legal & Compliance",
+    content:
+      "Fintech regulatory posture, non-custodial boundaries, jurisdiction mapping, and disclosures.",
+    version: 1,
+    createdAt: createdAt || now,
+    updatedAt: now,
+    complianceContent: {
+      frameworkSummary:
+        "Non-custodial technology platform solving trading workflow pain without holding client assets or providing individualized investment advice.",
+      productClassification: {
+        category: "non_custodial_tool",
+        custodyStatus: "non_custodial",
+        regulatoryRole: "technology_provider",
+        classificationRationale:
+          "Software tool operating strictly in client environment without discretionary trading control or pooled capital custody.",
+      },
+      jurisdictions: [
+        {
+          jurisdictionCode: "US",
+          regulatoryBody: "SEC / CFTC",
+          applicableRegime: "Commodity Exchange Act / Publisher Exemption",
+          targetLaunchPhase: "tier_1_launch",
+          complianceStatus: "in_review",
+          notes:
+            "Maintain non-custodial tech architecture to preserve publisher safe harbors.",
+        },
+        {
+          jurisdictionCode: "UK",
+          regulatoryBody: "FCA",
+          applicableRegime: "Regulated Activities Order (RAO)",
+          targetLaunchPhase: "tier_2_expansion",
+          complianceStatus: "unverified",
+        },
+        {
+          jurisdictionCode: "IN",
+          regulatoryBody: "SEBI",
+          applicableRegime: "SEBI (Research Analyst / Investment Adviser) Regs",
+          targetLaunchPhase: "tier_1_launch",
+          complianceStatus: "in_review",
+          notes:
+            "Ensure tool is analytical/algorithmic execution utility, not advisory service.",
+        },
+      ],
+      licensing: [
+        {
+          id: `lic-1-${projectId}`,
+          licenseType: "Registered Investment Advisor (RIA) Exemption",
+          thresholdCriteria:
+            "Does not provide personalized recommendations or discretionary trading on user accounts.",
+          status: "verified_requirement",
+          actionRequired:
+            "Enforce user-directed manual parameter configuration and non-personalized analytical outputs.",
+        },
+        {
+          id: `lic-2-${projectId}`,
+          licenseType: "Commodity Trading Advisor (CTA) Registration",
+          thresholdCriteria:
+            "Providing algorithmic advice or trade generation for futures markets to more than 15 clients.",
+          status: "potential_requirement",
+          actionRequired:
+            "Review CFTC Rule 4.14(a)(9) non-personalized software publisher exemption criteria.",
+        },
+      ],
+      privacyAndData: {
+        dataClassification: "pseudonymous_trading_data",
+        storageRegime: "local_first_only",
+        applicableStatutes: ["GDPR", "CCPA/CPRA", "India DPDP Act 2023"],
+        dataRetentionPolicy:
+          "User data stored locally on client device; zero server-side telemetry of trade executions.",
+        redactionRules:
+          "Tokenized redaction for account balances and net PnL in all external exports.",
+      },
+      disclosures: [
+        {
+          id: `disc-1-${projectId}`,
+          disclosureTitle:
+            "CFTC Rule 4.41 Hypothetical & Simulated Performance Disclaimer",
+          requiredPlacement: "modal_confirmation",
+          text: "Hypothetical or simulated performance results have certain limitations. Unlike an actual performance record, simulated results do not represent actual trading.",
+          status: "verified_requirement",
+        },
+        {
+          id: `disc-2-${projectId}`,
+          disclosureTitle: "High Risk Investment Warning",
+          requiredPlacement: "footer_all_pages",
+          text: "Trading futures, equities, and currencies involves substantial risk of loss and is not suitable for every investor. Only risk capital should be used.",
+          status: "verified_requirement",
+        },
+      ],
+      thirdPartyObligations: [
+        {
+          id: `tpo-1-${projectId}`,
+          counterparty: "Broker Execution API",
+          agreementType: "developer_agreement",
+          restrictions: [
+            "Do not store user broker credentials server-side",
+            "Rate limit trade order webhooks",
+          ],
+          auditFrequency: "Quarterly review of API integration safety",
+          status: "verified_requirement",
+        },
+      ],
+      evidence: [],
+      unresolvedQuestions: [
+        {
+          id: `uq-1-${projectId}`,
+          question:
+            "Does providing automated trade execution webhooks trigger broker-dealer or introducing broker registration under SEC/CFTC rules?",
+          impactSeverity: "blocking_public_launch",
+          hypothesizedAnswer:
+            "Non-custodial routing where client provides their own broker API keys is generally treated as software provision, but requires formal legal counsel confirmation.",
+          requiredExpertise: "securities_lawyer",
+          status: "open",
+        },
+      ],
+      professionalReview: {
+        disclaimerOfNonLegalAdvice:
+          "Yash OS provides operational governance, discipline tracking, and strategic compliance planning. It does not provide formal legal advice or regulatory representation.",
+      },
+      requirements: [],
+    },
+  };
+}
+
+/**
+ * Upgrades a Project to Schema v5.
+ * - Ensures Priority 2 projects have required workstream ('B' by default for software projects).
+ * - Ensures Priority 2 Workstream B projects have Document 6 (Legal & Compliance) initialized.
+ */
+export function upgradeProjectToV5(project: Project): Project {
+  const v4Proj = upgradeProjectToV4(project);
+  const now = new Date().toISOString();
+  const createdAt = v4Proj.createdAt || now;
+
+  let workstream = v4Proj.workstream;
+  if (v4Proj.priorityId === 2 && !workstream) {
+    workstream = "B";
+  }
+
+  const docs = v4Proj.docs ? [...v4Proj.docs] : [];
+  if (v4Proj.priorityId === 2 && workstream === "B") {
+    const defaultLegal = createDefaultLegalComplianceDoc(v4Proj.id, createdAt);
+    const legalDocIndex = docs.findIndex(
+      (d) => "type" in d && (d as ProjectDocument).type === "legal_compliance",
+    );
+    if (legalDocIndex < 0) {
+      docs.push(defaultLegal);
+    } else {
+      const existing = docs[legalDocIndex] as ProjectDocument;
+      const existingContent = (existing?.complianceContent ??
+        {}) as Partial<LegalComplianceContent>;
+      const defContent = defaultLegal.complianceContent!;
+      docs[legalDocIndex] = {
+        ...existing,
+        complianceContent: {
+          frameworkSummary:
+            existingContent.frameworkSummary || defContent.frameworkSummary,
+          productClassification:
+            existingContent.productClassification ??
+            defContent.productClassification,
+          jurisdictions: existingContent.jurisdictions?.length
+            ? existingContent.jurisdictions
+            : defContent.jurisdictions,
+          licensing: existingContent.licensing?.length
+            ? existingContent.licensing
+            : defContent.licensing,
+          privacyAndData:
+            existingContent.privacyAndData ?? defContent.privacyAndData,
+          disclosures: existingContent.disclosures?.length
+            ? existingContent.disclosures
+            : defContent.disclosures,
+          thirdPartyObligations: existingContent.thirdPartyObligations?.length
+            ? existingContent.thirdPartyObligations
+            : defContent.thirdPartyObligations,
+          evidence: existingContent.evidence ?? defContent.evidence,
+          unresolvedQuestions: existingContent.unresolvedQuestions?.length
+            ? existingContent.unresolvedQuestions
+            : defContent.unresolvedQuestions,
+          professionalReview:
+            existingContent.professionalReview ?? defContent.professionalReview,
+          requirements: existingContent.requirements ?? [],
+        },
+      };
+    }
+  }
+
+  return {
+    ...v4Proj,
+    workstream,
+    docs,
+  };
+}
+
+/**
+ * Deterministically upgrades OSState from Schema v4 (or earlier) to Schema v5.
+ * - Enhances TradingOperation with developmentStage, circuit breakers, and cash allocation policies.
+ * - Ensures Priority 2 Workstream B projects have Document 6 (Legal & Compliance).
+ * - Preserves all user data, historical DayRecords, task snapshots, and identifiers.
+ */
+export function migrateOSStateV5(raw: unknown): OSState {
+  const v4State = migrateOSStateV4(raw);
+
+  // 1. Upgrade projects
+  const upgradedProjects = v4State.projects.map(upgradeProjectToV5);
+
+  // 2. Ensure TradingOperation has complete v5 structure
+  let tradingOp = v4State.tradingOperation;
+  if (!tradingOp) {
+    tradingOp = migrateLbesToTradingOperation();
+  } else {
+    const rawProfile = (tradingOp.operatingProfile ??
+      {}) as Partial<TradingOperatingProfile>;
+    const rawRules = (rawProfile.riskRules ?? {}) as Partial<TradingRiskRules>;
+    const rawRoutines = (rawProfile.routines ?? {}) as Partial<TradingRoutines>;
+    const rawPlan = (tradingOp.financialPlan ??
+      {}) as Partial<FinancialTransitionPlan>;
+
+    tradingOp = {
+      ...tradingOp,
+      currentStage: tradingOp.currentStage ?? "paper_simulation",
+      operatingProfile: {
+        ...rawProfile,
+        id: rawProfile.id || "profile-lbes-1",
+        title: rawProfile.title || "Trading Operating Profile",
+        marketFocus: rawProfile.marketFocus || ["Futures (NQ / ES)"],
+        coreEdgeDescription:
+          rawProfile.coreEdgeDescription ||
+          "Generate cash through LBES and other systems to fund startup runway.",
+        developmentStage:
+          rawProfile.developmentStage ??
+          tradingOp.currentStage ??
+          "paper_simulation",
+        riskRules: {
+          maxDailyDrawdownCurrency: rawRules.maxDailyDrawdownCurrency ?? 500,
+          maxTrailingDrawdownPercent: rawRules.maxTrailingDrawdownPercent ?? 5,
+          maxRiskPerTradePercent: rawRules.maxRiskPerTradePercent ?? 1,
+          hardStopRequired: rawRules.hardStopRequired ?? true,
+          leverageOrContractLimit:
+            rawRules.leverageOrContractLimit ?? "2 contracts maximum",
+          maxConsecutiveLosses: rawRules.maxConsecutiveLosses ?? 2,
+          circuitBreakerAction: rawRules.circuitBreakerAction ?? "stop_for_day",
+        },
+        routines: {
+          preMarketPrepChecklist: rawRoutines.preMarketPrepChecklist ?? [
+            "Check economic calendar for high-impact releases",
+            "Mark key range levels",
+          ],
+          postMarketReviewChecklist: rawRoutines.postMarketReviewChecklist ?? [
+            "Log all trade executions and fills",
+            "Score rule adherence and discipline (1-5)",
+          ],
+          inTradeExecutionChecklist: rawRoutines.inTradeExecutionChecklist ?? [
+            "Verify hard stop-loss is placed in market",
+            "Adhere strictly to 1R / 2R take-profit targets",
+          ],
+        },
+        flexibleContent: rawProfile.flexibleContent ?? "",
+        version: rawProfile.version ?? 1,
+        updatedAt: rawProfile.updatedAt ?? new Date().toISOString(),
+      },
+      financialPlan: {
+        ...rawPlan,
+        id: rawPlan.id || "plan-fin-1",
+        title: rawPlan.title || "Financial & Transition Plan",
+        targetMonthlyCashflow: rawPlan.targetMonthlyCashflow ?? 5000,
+        currentMonthlyCashflow: rawPlan.currentMonthlyCashflow ?? 0,
+        monthlyLivingExpenses: rawPlan.monthlyLivingExpenses ?? 2500,
+        startupRunwayMonthsTarget: rawPlan.startupRunwayMonthsTarget ?? 12,
+        estimatedCurrentRunwayMonths: rawPlan.estimatedCurrentRunwayMonths ?? 6,
+        cashAllocationPolicy: rawPlan.cashAllocationPolicy ?? {
+          livingExpensesPercent: 40,
+          startupReinvestmentPercent: 30,
+          capitalBufferPercent: 20,
+          taxReservePercent: 10,
+        },
+        transitionMilestones: (rawPlan.transitionMilestones ?? []).map(
+          (tm: TransitionMilestone) => ({
+            ...tm,
+            prerequisitesSummary:
+              tm.prerequisitesSummary ??
+              "Complete disciplined execution sessions",
+            transitionTriggerConditions: tm.transitionTriggerConditions ?? [
+              "Rule adherence >= 90%",
+              "Discipline score >= 4.0",
+            ],
+          }),
+        ),
+        flexibleContent: rawPlan.flexibleContent ?? "",
+        version: rawPlan.version ?? 1,
+        updatedAt: rawPlan.updatedAt ?? new Date().toISOString(),
+      },
+      strategies: (tradingOp.strategies ?? []).map((s) => ({
+        ...s,
+        stage: s.stage ?? "paper_simulation",
+      })),
+      systems: tradingOp.systems ?? [],
+      accounts: (tradingOp.accounts ?? []).map((a) => ({
+        ...a,
+        accountType: a.accountType ?? "simulation",
+        status: a.status ?? "active",
+      })),
+      experiments: tradingOp.experiments ?? [],
+      executionRecords: tradingOp.executionRecords ?? [],
+      performanceHistory: tradingOp.performanceHistory ?? [],
+      riskIncidents: tradingOp.riskIncidents ?? [],
+    };
+  }
+
+  return syncPrioritiesWithProjects({
+    ...v4State,
+    schemaVersion: 5,
+    projects: upgradedProjects,
+    tradingOperation: tradingOp,
+  });
+}
+
 // Default export alias ensuring 100% backward compatibility
-export const migrateOSState = migrateOSStateV4;
+export const migrateOSState = migrateOSStateV5;

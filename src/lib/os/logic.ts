@@ -5,6 +5,7 @@ import type {
   Plan,
   PriorityId,
   Project,
+  ProjectDoc,
   ProjectDocument,
   Task,
   TradingOperatingProfile,

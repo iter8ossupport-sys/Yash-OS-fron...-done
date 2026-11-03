@@ -30,7 +30,7 @@ export interface ProjectDetailsModalProps {
   onSave: (p: Project) => void;
   onDelete: () => void;
   onSetActive: (active: boolean) => void;
-  onOpenDocEditor: (doc: ProjectDoc | ProjectDocument | null) => void;
+  onOpenDocEditor?: (doc: ProjectDoc | ProjectDocument | null) => void;
 }
 
 export type ProjectDetailTabId =

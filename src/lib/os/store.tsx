@@ -23,7 +23,7 @@ const OSContext = createContext<Ctx | null>(null);
 
 export function OSProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<OSState>(() =>
-    syncPrioritiesWithProjects(initialState),
+    syncPrioritiesWithProjects(migrateOSState(initialState)),
   );
   const [goalsOpen, setGoalsOpen] = useState(false);
   const loaded = useRef(false);

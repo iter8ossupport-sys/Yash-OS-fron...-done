@@ -14,8 +14,10 @@ export const ProjectGoalSchema = z.object({
   targetDeadline: z.string().optional(),
   status: z.enum(["active", "achieved", "superseded", "abandoned"]),
   createdAt: z.string(),
-  achievedAt: z.string().optional(),
+  resolvedAt: z.string().optional(),
+  achievementEvidence: z.string().optional(),
   supersededBy: z.string().optional(),
+  transitionReason: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -30,6 +32,21 @@ export const MilestoneApprovalRecordSchema = z.object({
     ),
 });
 
+export const MilestoneAssessmentSchema = z.object({
+  id: z.string().min(1),
+  milestoneId: z.string().min(1),
+  assessedAt: z.string(),
+  assessedBy: z.literal("founder"),
+  status: z.enum(["completed", "blocked", "abandoned", "active"]),
+  actualMetrics: z.array(MetricSchema),
+  actualResultsSummary: z.string(),
+  evidenceReferences: z.array(z.string()),
+  founderNotes: z.string(),
+  systemRecommendation: z
+    .enum(["recommended_completed", "recommended_blocked", "needs_review"])
+    .optional(),
+});
+
 export const MilestoneSchema = z.object({
   id: z.string().min(1),
   projectId: z.string().min(1),
@@ -41,6 +58,8 @@ export const MilestoneSchema = z.object({
   order: z.number().int().nonnegative(),
   isPrimaryActive: z.boolean(),
   additionalActiveApproval: MilestoneApprovalRecordSchema.optional(),
+  assessmentHistory: z.array(MilestoneAssessmentSchema).optional(),
+  currentAssessment: MilestoneAssessmentSchema.optional(),
   completedAt: z.string().optional(),
   createdAt: z.string(),
 });
@@ -51,12 +70,34 @@ export const FlexibleDocumentContentSchema = z.object({
   tags: z.array(z.string()).optional(),
 });
 
+export const OutcomeEvaluationRecordSchema = z.object({
+  id: z.string().min(1),
+  outcomeId: z.string().min(1),
+  evaluatedAt: z.string(),
+  status: z.enum(["pending", "achieved", "missed"]),
+  evaluatedBy: z.literal("founder"),
+  successCriteria: z.string(),
+  actualEvidenceSummary: z.string(),
+  linkedTaskOutputs: z
+    .array(
+      z.object({
+        taskId: z.string(),
+        taskTitle: z.string(),
+        output: z.record(z.string()).optional(),
+        elapsedMinutes: z.number(),
+      }),
+    )
+    .default([]),
+  founderNotes: z.string().optional(),
+});
+
 export const PlanOutcomeItemSchema = z.object({
   id: z.string().min(1),
   text: z.string().min(1),
   successCriteria: z.string().default(""),
   status: z.enum(["pending", "achieved", "missed"]),
   targetDeadline: z.string().optional(),
+  evaluations: z.array(OutcomeEvaluationRecordSchema).optional(),
   evidenceNotes: z.string().optional(),
 });
 
@@ -66,9 +107,25 @@ export const ExecutionPlanOutcomeHorizonSchema = z.object({
   daily: z.array(PlanOutcomeItemSchema).default([]),
 });
 
+export const EvidenceProvenanceSchema = z.object({
+  scope: z.enum(["project", "priority", "founder_system"]),
+  sourceType: z.enum([
+    "project_bottleneck",
+    "project_document",
+    "project_task_output",
+    "priority_bottleneck",
+    "review_bottleneck",
+  ]),
+  sourceId: z.string(),
+  sourceDate: z.string().optional(),
+  description: z.string(),
+});
+
 export const RecommendedTaskTemplateSchema = z.object({
   id: z.string().min(1),
-  milestoneId: z.string().min(1),
+  projectId: z.string().min(1).optional(),
+  milestoneId: z.string().optional(),
+  planOutcomeId: z.string().optional(),
   title: z.string().min(1),
   duration: z.number().positive(),
   kind: z.enum(["simple", "measurable", "validation"]),
@@ -77,6 +134,8 @@ export const RecommendedTaskTemplateSchema = z.object({
   what: z.string().default(""),
   how: z.string().default(""),
   where: z.string().default(""),
+  provenance: z.array(EvidenceProvenanceSchema).optional(),
+  scope: z.enum(["milestone_execution", "project_scoping"]).optional(),
 });
 
 export const PlanRevisionRecordSchema = z.object({
@@ -98,7 +157,7 @@ export const PlanRevisionRecordSchema = z.object({
 
 export const StructuredExecutionPlanSchema = z.object({
   projectId: z.string().min(1),
-  activeGoalId: z.string().min(1),
+  activeGoalId: z.string().optional(),
   activeMilestoneIds: z.array(z.string()).default([]),
   originalBaseline: z.object({
     setAt: z.string(),
@@ -191,19 +250,34 @@ export const ProjectSchema = z
     status: z.enum(["active", "paused", "completed", "archived"]),
     lifecyclePhase: z.string().optional(),
     activeGoalId: z.string().optional(),
+    goals: z.array(ProjectGoalSchema).optional(),
     goalsHistory: z.array(ProjectGoalSchema).optional(),
     milestones: z.array(MilestoneSchema).optional(),
+    executionPlan: StructuredExecutionPlanSchema.optional(),
     docs: z.array(z.any()).optional(),
     createdAt: z.string(),
   })
   .superRefine((val, ctx) => {
-    // Rule 1: Exactly one active major goal per project (if goalsHistory is provided)
-    if (val.goalsHistory && val.goalsHistory.length > 0) {
-      const activeGoals = val.goalsHistory.filter((g) => g.status === "active");
-      if (activeGoals.length !== 1) {
+    // Rule 1: At most 1 active major goal per project (can be 0 if uninitialized)
+    const goalList = val.goals ?? val.goalsHistory;
+    if (goalList && goalList.length > 0) {
+      const activeGoals = goalList.filter((g) => g.status === "active");
+      if (activeGoals.length > 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `Project must have exactly 1 active major goal. Found: ${activeGoals.length}`,
+          path: val.goals ? ["goals"] : ["goalsHistory"],
+        });
+      }
+    }
+
+    // Rule 1b: Divergence check - if both goals and goalsHistory are present, goalsHistory must not diverge from canonical goals
+    if (val.goals && val.goalsHistory && val.goals !== val.goalsHistory) {
+      if (val.goals.length !== val.goalsHistory.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "goalsHistory cannot diverge from canonical goals collection",
           path: ["goalsHistory"],
         });
       }
@@ -235,6 +309,7 @@ export const TaskSchema = z.object({
   projectId: z.string().optional(),
   milestoneId: z.string().optional(),
   planOutcomeId: z.string().optional(),
+  scope: z.enum(["milestone_execution", "project_scoping"]).optional(),
   title: z.string().min(1),
   duration: z.number().int().positive(),
   timeBlock: z.string().default(""),

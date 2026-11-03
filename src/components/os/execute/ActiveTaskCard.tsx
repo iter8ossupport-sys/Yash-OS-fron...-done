@@ -52,6 +52,16 @@ export function ActiveTaskCard({
               #{current.priorityId} {activePriority?.name}
             </Badge>
             <Badge>{activePriority?.project || "No active project"}</Badge>
+            {current.scope === "project_scoping" && (
+              <Badge className="border-cyan/40 bg-cyan/15 text-cyan font-medium">
+                Scoping Task
+              </Badge>
+            )}
+            {current.milestoneId && activePriority?.milestone && (
+              <Badge className="border-cyan/30 text-cyan font-medium">
+                Milestone: {activePriority.milestone}
+              </Badge>
+            )}
             <Badge
               className={
                 current.status === "active"

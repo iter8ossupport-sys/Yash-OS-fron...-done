@@ -29,6 +29,9 @@ export interface CustomLifecyclePhase {
 
 export type LifecyclePhase = PredefinedLifecyclePhase | string;
 
+export type ProjectGoalStatus =
+  "active" | "achieved" | "superseded" | "abandoned";
+
 /** Project-level Major Goal entity */
 export interface ProjectGoal {
   id: string;
@@ -36,10 +39,12 @@ export interface ProjectGoal {
   text: string;
   metrics: Metric[];
   targetDeadline?: string | undefined;
-  status: "active" | "achieved" | "superseded" | "abandoned";
+  status: ProjectGoalStatus;
   createdAt: string; // ISO 8601
-  achievedAt?: string | undefined; // ISO 8601
-  supersededBy?: string | undefined; // ProjectGoal.id
+  resolvedAt?: string | undefined; // ISO 8601
+  achievementEvidence?: string | undefined; // Required when status === 'achieved'
+  supersededBy?: string | undefined; // ProjectGoal.id, required when status === 'superseded'
+  transitionReason?: string | undefined; // Required when status === 'superseded' | 'abandoned'
   notes?: string | undefined;
 }
 
@@ -54,6 +59,24 @@ export interface MilestoneApprovalRecord {
   reason: string; // Explicit architectural justification for concurrency
 }
 
+/** Formal milestone assessment evaluating outcomes, metrics and evidence */
+export interface MilestoneAssessment {
+  id: string;
+  milestoneId: string;
+  assessedAt: string; // ISO 8601
+  assessedBy: "founder";
+  status: "completed" | "blocked" | "abandoned" | "active";
+  actualMetrics: Metric[];
+  actualResultsSummary: string;
+  evidenceReferences: string[];
+  founderNotes: string;
+  systemRecommendation?:
+    | "recommended_completed"
+    | "recommended_blocked"
+    | "needs_review"
+    | undefined;
+}
+
 /** Granular milestone entity */
 export interface Milestone {
   id: string;
@@ -66,6 +89,8 @@ export interface Milestone {
   order: number;
   isPrimaryActive: boolean; // Exactly one primary active milestone
   additionalActiveApproval?: MilestoneApprovalRecord | undefined; // Required if multiple active
+  assessmentHistory?: MilestoneAssessment[] | undefined;
+  currentAssessment?: MilestoneAssessment | undefined;
   completedAt?: string | undefined;
   createdAt: string;
 }
@@ -93,12 +118,30 @@ export interface DocumentVersionSnapshot {
   content: FlexibleDocumentContent | Record<string, unknown>;
 }
 
+export interface OutcomeEvaluationRecord {
+  id: string;
+  outcomeId: string;
+  evaluatedAt: string; // ISO 8601
+  status: "pending" | "achieved" | "missed";
+  evaluatedBy: "founder";
+  successCriteria: string;
+  actualEvidenceSummary: string;
+  linkedTaskOutputs: {
+    taskId: string;
+    taskTitle: string;
+    output?: Record<string, string> | undefined;
+    elapsedMinutes: number;
+  }[];
+  founderNotes?: string | undefined;
+}
+
 export interface PlanOutcomeItem {
   id: string;
   text: string;
   successCriteria: string;
   status: "pending" | "achieved" | "missed";
   targetDeadline?: string | undefined;
+  evaluations?: OutcomeEvaluationRecord[] | undefined;
   evidenceNotes?: string | undefined;
 }
 
@@ -108,9 +151,26 @@ export interface ExecutionPlanOutcomeHorizon {
   daily: PlanOutcomeItem[];
 }
 
+export type EvidenceScope = "project" | "priority" | "founder_system";
+
+export interface EvidenceProvenance {
+  scope: EvidenceScope;
+  sourceType:
+    | "project_bottleneck"
+    | "project_document"
+    | "project_task_output"
+    | "priority_bottleneck"
+    | "review_bottleneck";
+  sourceId: string;
+  sourceDate?: string | undefined;
+  description: string;
+}
+
 export interface RecommendedTaskTemplate {
   id: string;
-  milestoneId: string;
+  projectId: string;
+  milestoneId?: string | undefined; // Optional when recommending project-scoping tasks
+  planOutcomeId?: string | undefined;
   title: string;
   duration: number; // minutes
   kind: TaskKind;
@@ -119,6 +179,8 @@ export interface RecommendedTaskTemplate {
   what: string;
   how: string;
   where: string;
+  provenance?: EvidenceProvenance[] | undefined;
+  scope?: "milestone_execution" | "project_scoping" | undefined;
 }
 
 export interface PlanRevisionRecord {
@@ -140,7 +202,7 @@ export interface PlanRevisionRecord {
 
 export interface StructuredExecutionPlan {
   projectId: string;
-  activeGoalId: string;
+  activeGoalId?: string | undefined;
   activeMilestoneIds: string[];
 
   // 1. Original Plan Baseline (Immutable founder benchmark)
@@ -236,12 +298,14 @@ export interface Project {
   learningCategories?: string[] | undefined;
   docs?: (ProjectDoc | ProjectDocument)[] | undefined;
 
-  // Schema v3 enhancements
+  // Schema v3 & v4 enhancements
   lifecyclePhase?: LifecyclePhase | undefined;
   customPhases?: CustomLifecyclePhase[] | undefined;
   activeGoalId?: string | undefined;
-  goalsHistory?: ProjectGoal[] | undefined;
+  goals?: ProjectGoal[] | undefined; // Canonical authoritative collection (v4)
+  goalsHistory?: ProjectGoal[] | undefined; // Non-authoritative backward compatibility mirror (projected from goals)
   milestones?: Milestone[] | undefined;
+  executionPlan?: StructuredExecutionPlan | undefined; // Authoritative structured plan (v4)
 }
 
 export interface ProjectPerformanceSummary {

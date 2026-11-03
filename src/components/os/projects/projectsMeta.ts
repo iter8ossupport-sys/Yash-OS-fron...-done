@@ -1,4 +1,4 @@
-import type { PriorityId } from "@/lib/os/types";
+import type { PredefinedLifecyclePhase, PriorityId } from "@/lib/os/types";
 
 export const STATUSES = ["active", "paused", "completed", "archived"] as const;
 
@@ -58,4 +58,43 @@ export const SUGGESTED_LEARNING_CATEGORIES = [
   "Principles and fundamentals",
   "Skill development",
   "Learning from people and real-world experience",
+];
+
+export interface LifecyclePhaseMeta {
+  id: PredefinedLifecyclePhase;
+  label: string;
+  desc: string;
+}
+
+export const LIFECYCLE_PHASES: LifecyclePhaseMeta[] = [
+  {
+    id: "idea_discovery",
+    label: "1. Idea & Discovery",
+    desc: "Problem space exploration & founder-market fit",
+  },
+  {
+    id: "problem_validation",
+    label: "2. Problem Validation",
+    desc: "User interviews & acute pain discovery",
+  },
+  {
+    id: "solution_validation",
+    label: "3. Solution Validation",
+    desc: "Prototypes, LOIs & early commitments",
+  },
+  {
+    id: "build_delivery",
+    label: "4. Build & Delivery",
+    desc: "Active engineering, MVP release & iteration",
+  },
+  {
+    id: "growth_scaling",
+    label: "5. Growth & Scaling",
+    desc: "Distribution channels, sales & retention",
+  },
+  {
+    id: "fundraising_team",
+    label: "6. Fundraising & Team",
+    desc: "Capital allocation & team expansion",
+  },
 ];

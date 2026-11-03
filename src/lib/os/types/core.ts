@@ -31,6 +31,7 @@ export interface Task {
   projectId?: string | undefined;
   milestoneId?: string | undefined;
   planOutcomeId?: string | undefined;
+  scope?: "milestone_execution" | "project_scoping" | undefined;
   title: string;
   duration: number; // minutes
   timeBlock: string;

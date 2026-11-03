@@ -46,7 +46,7 @@ export const PRIORITIES: Priority[] = [
 export const today = () => new Date().toISOString().slice(0, 10);
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
-const TEMPLATES: Record<
+export const TEMPLATES: Record<
   PriorityId,
   Omit<Task, "id" | "priorityId" | "selected" | "status" | "elapsedMs">[]
 > = {

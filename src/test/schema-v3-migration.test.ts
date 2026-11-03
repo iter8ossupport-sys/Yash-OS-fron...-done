@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CURRENT_SCHEMA_VERSION,
+  SCHEMA_V3_VERSION,
   migrateOSState,
   migrateOSStateV3,
   migrateDayRecord,
@@ -17,8 +18,9 @@ import {
 import type { DayRecord, OSState, Project } from "../lib/os/types";
 
 describe("Phase 1: Schema v3 Foundation & Migration Tests", () => {
-  it("declares CURRENT_SCHEMA_VERSION as 3", () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(3);
+  it("declares SCHEMA_V3_VERSION as 3 and CURRENT_SCHEMA_VERSION as 4", () => {
+    expect(SCHEMA_V3_VERSION).toBe(3);
+    expect(CURRENT_SCHEMA_VERSION).toBe(4);
   });
 
   it("migrates raw legacy state to Schema v3 with all defaults and master repositories", () => {
@@ -29,7 +31,7 @@ describe("Phase 1: Schema v3 Foundation & Migration Tests", () => {
 
     const migrated = migrateOSStateV3(rawLegacy);
 
-    expect(migrated.schemaVersion).toBe(3);
+    expect(migrated.schemaVersion).toBe(SCHEMA_V3_VERSION);
     expect(migrated.tradingOperation).toBeDefined();
     expect(migrated.tradingOperation?.id).toBe("trading-op-lbes");
     expect(migrated.tradingOperation?.operatingProfile.title).toBe(
@@ -154,7 +156,7 @@ describe("Phase 1: Schema v3 Foundation & Migration Tests", () => {
 
     const migrated = migrateOSState(v2State);
 
-    expect(migrated.schemaVersion).toBe(3);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     // History strictly preserved
     expect(migrated.history.length).toBe(1);
     expect(migrated.history[0]?.date).toBe("2026-10-20");
@@ -427,7 +429,7 @@ describe("Phase 1: Schema v3 Foundation & Migration Tests", () => {
     const initial = migrateOSState({});
     const reMigrated = migrateOSState(initial);
 
-    expect(reMigrated.schemaVersion).toBe(3);
+    expect(reMigrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(reMigrated.projects.length).toBe(initial.projects.length);
     expect(reMigrated.tradingOperation?.id).toBe(initial.tradingOperation?.id);
     expect(reMigrated.learningSystem?.id).toBe(initial.learningSystem?.id);

@@ -2,6 +2,7 @@ import { BookMarked, BookOpen, RefreshCw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button, Label, PriorityIcon, Textarea } from "@/components/os/ui";
 import type { KnowledgeItem, Plan, Priority, PriorityId } from "@/lib/os/types";
+import { useOS } from "@/lib/os/store";
 import { recommendOutcomes } from "@/lib/os/seed";
 import { formatBadgeClass, getKnowledgeFormat } from "@/lib/os/knowledge";
 
@@ -22,26 +23,45 @@ export function PlanOutcomesStep({
   onLinkKnowledge,
   onViewKnowledge,
 }: PlanOutcomesStepProps) {
+  const { state } = useOS();
+
+  const handleRegenerateOutcomes = () => {
+    const defaultOutcomes = recommendOutcomes(priorities);
+    const activeP1 = state.projects.find(
+      (p) =>
+        p.priorityId === 1 &&
+        (p.id === priorities.find((pr) => pr.id === 1)?.activeProjectId ||
+          p.status === "active"),
+    );
+
+    const pendingDaily =
+      activeP1?.executionPlan?.currentApproved.outcomes.daily.find(
+        (o) => o.status === "pending",
+      );
+
+    if (pendingDaily?.text) {
+      defaultOutcomes[1] = pendingDaily.text;
+    }
+
+    onChangeDraft((d) => ({
+      ...d,
+      outcomes: defaultOutcomes,
+    }));
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Proposed from your project context and milestones. Edit before
+          Proposed from your project context and execution plan. Edit before
           approving.
         </p>
-        <Button
-          size="sm"
-          onClick={() =>
-            onChangeDraft((d) => ({
-              ...d,
-              outcomes: recommendOutcomes(priorities),
-            }))
-          }
-        >
+        <Button size="sm" onClick={handleRegenerateOutcomes}>
           <RefreshCw className="h-3.5 w-3.5" />
           Regenerate
         </Button>
       </div>
+
       {priorities.map((p) => {
         const linkedKIds = draft.outcomeKnowledgeIds?.[p.id] || [];
         const linkedItems = knowledge.filter((k) => linkedKIds.includes(k.id));
@@ -59,68 +79,69 @@ export function PlanOutcomesStep({
                 onChange={(e) =>
                   onChangeDraft((d) => ({
                     ...d,
-                    outcomes: {
-                      ...d.outcomes,
-                      [p.id]: e.target.value,
-                    },
+                    outcomes: { ...d.outcomes, [p.id]: e.target.value },
                   }))
                 }
               />
 
-              {/* Linked Knowledge for this outcome */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {linkedItems.map((k) => {
-                    const fmt = getKnowledgeFormat(k);
-                    return (
-                      <span
-                        key={k.id}
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition cursor-pointer hover:brightness-110",
-                          formatBadgeClass(fmt),
-                        )}
-                        onClick={() => onViewKnowledge([k])}
-                        title="Click to view details"
-                      >
-                        <BookOpen className="h-3 w-3" />
-                        <span className="max-w-[150px] truncate">
-                          {k.title}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onChangeDraft((d) => ({
-                              ...d,
-                              outcomeKnowledgeIds: {
-                                ...(d.outcomeKnowledgeIds || {}),
-                                [p.id]: (
-                                  d.outcomeKnowledgeIds?.[p.id] || []
-                                ).filter((id) => id !== k.id),
-                              },
-                            }));
-                          }}
-                          className="ml-1 hover:text-destructive"
-                          title="Unlink"
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </button>
+              {/* Linked Knowledge Items Display */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {linkedItems.map((item) => {
+                  const fmt = getKnowledgeFormat(item);
+                  return (
+                    <span
+                      key={item.id}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium transition-colors",
+                        formatBadgeClass(fmt),
+                      )}
+                    >
+                      <BookOpen className="h-3 w-3" />
+                      <span className="max-w-[140px] truncate">
+                        {item.title}
                       </span>
-                    );
-                  })}
-                </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = (
+                            draft.outcomeKnowledgeIds?.[p.id] || []
+                          ).filter((id) => id !== item.id);
+                          onChangeDraft((d) => ({
+                            ...d,
+                            outcomeKnowledgeIds: {
+                              ...d.outcomeKnowledgeIds,
+                              [p.id]: updated,
+                            },
+                          }));
+                        }}
+                        className="ml-1 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+
                 <Button
-                  type="button"
                   size="sm"
-                  variant="ghost"
-                  className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                  variant="glass"
+                  className="h-7 text-xs"
                   onClick={() => onLinkKnowledge(p.id)}
                 >
-                  <BookMarked className="h-3 w-3 mr-1" />
-                  {linkedItems.length > 0
-                    ? "Edit Knowledge Reference"
-                    : "+ Link Knowledge"}
+                  <BookMarked className="h-3.5 w-3.5" />
+                  Link Knowledge
                 </Button>
+
+                {linkedItems.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => onViewKnowledge(linkedItems)}
+                  >
+                    View details
+                  </Button>
+                )}
               </div>
             </div>
           </div>

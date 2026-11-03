@@ -4,7 +4,12 @@ import { ArrowDown, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useOS } from "@/lib/os/store";
 import { saveProject, deleteProject, setActiveProject } from "@/lib/os/logic";
-import type { PriorityId, Project, ProjectDoc } from "@/lib/os/types";
+import type {
+  PriorityId,
+  Project,
+  ProjectDoc,
+  ProjectDocument,
+} from "@/lib/os/types";
 import { Button, Glass, PageHeader, PriorityIcon } from "@/components/os/ui";
 import { cn } from "@/lib/utils";
 import {
@@ -48,7 +53,7 @@ function ProjectsPage() {
   // Active document editor modal state
   const [docModal, setDocModal] = useState<{
     project: Project;
-    doc: ProjectDoc | null;
+    doc: ProjectDoc | ProjectDocument | null;
   } | null>(null);
 
   const activeProject = activeDetailsProjectId

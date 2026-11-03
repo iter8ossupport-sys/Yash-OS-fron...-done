@@ -15,7 +15,9 @@ import { initialState } from "../seed";
 import { syncPrioritiesWithProjects } from "../logic";
 import { defaultReviewSettings } from "./fixtures";
 
-export const CURRENT_SCHEMA_VERSION = 3;
+export const SCHEMA_V3_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
+export const SCHEMA_V4_VERSION = 4;
 
 /**
  * Upgrades a single DayRecord from legacy schema to schema v2/v3.
@@ -116,21 +118,30 @@ export function upgradeProjectToV3(project: Project): Project {
 
   // 3. Milestones (one primary active)
   let milestones = project.milestones ? [...project.milestones] : [];
+  const rawMs = (project.milestone || "").trim();
+  const isReliableMilestone =
+    rawMs.length >= 3 &&
+    !/^(not specified|none|n\/a|placeholder|untitled|\s*)$/i.test(rawMs);
+
   if (milestones.length === 0) {
-    const msId = `ms-${project.id}`;
-    const initialMilestone: Milestone = {
-      id: msId,
-      projectId: project.id,
-      title: project.milestone || "Ship next release & collect evidence",
-      objective: project.objective || "",
-      metrics: [],
-      deadline: project.deadline || "",
-      status: "active",
-      order: 1,
-      isPrimaryActive: true,
-      createdAt,
-    };
-    milestones = [initialMilestone];
+    if (isReliableMilestone) {
+      const msId = `ms-${project.id}`;
+      const initialMilestone: Milestone = {
+        id: msId,
+        projectId: project.id,
+        title: rawMs,
+        objective: project.objective || "",
+        metrics: [],
+        deadline: project.deadline || "",
+        status: "active",
+        order: 1,
+        isPrimaryActive: true,
+        createdAt,
+      };
+      milestones = [initialMilestone];
+    } else {
+      milestones = [];
+    }
   } else if (!milestones.some((m) => m.isPrimaryActive)) {
     const firstActive = milestones.find((m) => m.status === "active");
     if (firstActive) {
@@ -513,7 +524,7 @@ export function migrateOSStateV3(raw: unknown): OSState {
     const seeded = syncPrioritiesWithProjects(initialState);
     return {
       ...seeded,
-      schemaVersion: CURRENT_SCHEMA_VERSION,
+      schemaVersion: 3,
       tradingOperation: migrateLbesToTradingOperation(
         seeded.projects.find((p) => p.id === "demo-lbes"),
       ),
@@ -614,7 +625,7 @@ export function migrateOSStateV3(raw: unknown): OSState {
   const migrated: OSState = {
     ...initialState,
     ...(p as unknown as OSState),
-    schemaVersion: CURRENT_SCHEMA_VERSION,
+    schemaVersion: 3,
     userAvatar: typeof p["userAvatar"] === "string" ? p["userAvatar"] : null,
     projects: upgradedProjects,
     tradingOperation,
@@ -656,5 +667,222 @@ export function migrateOSStateV3(raw: unknown): OSState {
   return syncPrioritiesWithProjects(migrated);
 }
 
+/**
+ * Upgrades a Project to Schema v4:
+ * 1. Unifies active goal & goalsHistory into canonical `goals: ProjectGoal[]`.
+ * 2. Safeguard 1: Never fabricate an active goal from an empty, blank, or placeholder objective.
+ * 3. Hoists authoritative StructuredExecutionPlan to `project.executionPlan`.
+ * 4. Normalizes `execution_plan` document in `project.docs` to be a presentation handle.
+ * 5. Backfills `milestone.assessmentHistory: []`.
+ */
+export function upgradeProjectToV4(project: Project): Project {
+  const now = new Date().toISOString();
+  const createdAt = project.createdAt || now;
+
+  // 1. Canonical Goals Unification
+  let goals: ProjectGoal[] = [];
+  if (Array.isArray(project.goals) && project.goals.length > 0) {
+    goals = [...project.goals];
+  } else if (
+    Array.isArray(project.goalsHistory) &&
+    project.goalsHistory.length > 0
+  ) {
+    goals = [...project.goalsHistory];
+  }
+
+  let activeGoalId: string | undefined = project.activeGoalId;
+
+  // Safeguard 1: Never fabricate an active goal during migration from an empty or placeholder objective.
+  // Preserve the project without an active goal when no reliable goal source exists.
+  const rawObj = (project.objective || "").trim();
+  const isReliableObjective =
+    rawObj.length >= 3 &&
+    !/^(not specified|none|n\/a|placeholder|untitled|\s*)$/i.test(rawObj);
+
+  if (goals.length === 0) {
+    if (isReliableObjective) {
+      const initialGoal: ProjectGoal = {
+        id: `goal-${project.id}`,
+        projectId: project.id,
+        text: rawObj,
+        metrics: [],
+        targetDeadline: project.deadline,
+        status: "active",
+        createdAt,
+      };
+      goals = [initialGoal];
+      activeGoalId = initialGoal.id;
+    } else {
+      goals = [];
+      activeGoalId = undefined;
+    }
+  } else {
+    // If activeGoalId is specified, ensure that goal has status: "active"
+    if (activeGoalId) {
+      const match = goals.find((g) => g.id === activeGoalId);
+      if (match) {
+        match.status = "active";
+        for (const g of goals) {
+          if (g.id !== activeGoalId && g.status === "active") {
+            g.status = "superseded";
+            g.supersededBy = activeGoalId;
+            g.transitionReason = "Superseded during canonical goal migration";
+            g.resolvedAt = now;
+          }
+        }
+      } else {
+        const firstActive = goals.find((g) => g.status === "active");
+        activeGoalId = firstActive?.id;
+      }
+    } else {
+      const firstActive = goals.find((g) => g.status === "active");
+      activeGoalId = firstActive?.id;
+    }
+  }
+
+  // 2. Milestones Assessment Backfill & Concurrency Normalization
+  let milestones: Milestone[] = (project.milestones ?? []).map((m) => ({
+    ...m,
+    assessmentHistory: m.assessmentHistory ?? [],
+  }));
+
+  const rawMsV4 = (project.milestone || "").trim();
+  const isReliableMsV4 =
+    rawMsV4.length >= 3 &&
+    !/^(not specified|none|n\/a|placeholder|untitled|\s*)$/i.test(rawMsV4);
+
+  if (
+    !isReliableMsV4 &&
+    milestones.length === 1 &&
+    milestones[0]?.title === "Ship next release & collect evidence"
+  ) {
+    milestones = [];
+  }
+
+  // 3. Hoist Authoritative StructuredExecutionPlan to `project.executionPlan`
+  let executionPlan: StructuredExecutionPlan | undefined =
+    project.executionPlan;
+  const docs = (project.docs ?? []) as ProjectDocument[];
+
+  if (!executionPlan) {
+    const docWithPlan = docs.find(
+      (d) => d.type === "execution_plan" && d.executionPlan,
+    );
+    if (docWithPlan && docWithPlan.executionPlan) {
+      executionPlan = docWithPlan.executionPlan;
+    }
+  }
+
+  const activeMilestones = milestones.filter(
+    (m) => m.status === "active" || m.isPrimaryActive,
+  );
+
+  if (!executionPlan) {
+    executionPlan = {
+      projectId: project.id,
+      activeGoalId: activeGoalId,
+      activeMilestoneIds: activeMilestones.map((m) => m.id),
+      originalBaseline: {
+        setAt: createdAt,
+        goalSnapshotText:
+          goals.find((g) => g.id === activeGoalId)?.text || rawObj,
+        milestoneTitles: activeMilestones.map((m) => m.title),
+        outcomes: { monthly: [], weekly: [], daily: [] },
+      },
+      currentApproved: {
+        version: 1,
+        approvedAt: createdAt,
+        outcomes: { monthly: [], weekly: [], daily: [] },
+        recommendedTasks: [],
+      },
+      proposedRevisions: [],
+    };
+  }
+
+  // 4. Ensure `execution_plan` doc acts strictly as a presentation handle in docs
+  const normalizedDocs: ProjectDocument[] = docs.map((d) => {
+    if (d.type === "execution_plan") {
+      return {
+        ...d,
+        executionPlan: undefined,
+        version: executionPlan?.currentApproved?.version ?? 1,
+      };
+    }
+    return d;
+  });
+
+  return {
+    ...project,
+    activeGoalId,
+    goals,
+    goalsHistory: goals,
+    milestones,
+    executionPlan,
+    docs: normalizedDocs,
+  };
+}
+
+/**
+ * Deterministically upgrades OSState from Schema v3 (or earlier) to Schema v4.
+ */
+export function migrateOSStateV4(raw: unknown): OSState {
+  // 1. Run v3 migration to ensure all v1/v2 transformations are complete
+  const v3State = migrateOSStateV3(raw);
+
+  // 2. Upgrade all projects to v4
+  const upgradedProjects = v3State.projects.map(upgradeProjectToV4);
+
+  // 3. Backfill tasks with explicit relationship semantics:
+  // Safeguard 2: Define and validate the project-scoping task relationship explicitly.
+  // Tasks without an active milestone must not receive invented milestone IDs.
+  const activeP1 = upgradedProjects.find(
+    (p) => p.priorityId === 1 && p.status === "active",
+  );
+  const activeP1Milestone = activeP1?.milestones?.find(
+    (m) => m.isPrimaryActive || m.status === "active",
+  );
+
+  const upgradeTaskV4 = (t: Task): Task => {
+    const isP1 = t.priorityId === 1;
+    const targetProject = isP1 ? activeP1 : undefined;
+    const hasActiveMilestone = isP1 && Boolean(activeP1Milestone);
+
+    return {
+      ...t,
+      projectId: t.projectId ?? targetProject?.id,
+      milestoneId:
+        t.milestoneId ??
+        (hasActiveMilestone ? activeP1Milestone?.id : undefined),
+      scope:
+        t.scope ??
+        (t.milestoneId || hasActiveMilestone
+          ? "milestone_execution"
+          : "project_scoping"),
+    };
+  };
+
+  const upgradedPlan = v3State.plan
+    ? {
+        ...v3State.plan,
+        tasks: (v3State.plan.tasks ?? []).map(upgradeTaskV4),
+      }
+    : null;
+
+  const upgradedDraft = v3State.draft
+    ? {
+        ...v3State.draft,
+        tasks: (v3State.draft.tasks ?? []).map(upgradeTaskV4),
+      }
+    : null;
+
+  return syncPrioritiesWithProjects({
+    ...v3State,
+    schemaVersion: 4,
+    projects: upgradedProjects,
+    plan: upgradedPlan,
+    draft: upgradedDraft,
+  });
+}
+
 // Default export alias ensuring 100% backward compatibility
-export const migrateOSState = migrateOSStateV3;
+export const migrateOSState = migrateOSStateV4;

@@ -1,3 +1,4 @@
+import { evaluateDailyOutcome } from "./projects/logic";
 import type {
   DayRecord,
   OSState,
@@ -208,15 +209,92 @@ export function buildDayRecord(
   };
 }
 
+export interface OutcomeEvaluationPayload {
+  projectId: string;
+  outcomeId: string;
+  status: "pending" | "achieved" | "missed";
+  actualEvidenceSummary: string;
+  founderNotes?: string | undefined;
+}
+
 export function closeDay(
   s: OSState,
   learning: string,
   now = Date.now(),
+  outcomeEvaluations?: OutcomeEvaluationPayload[] | undefined,
 ): OSState {
   if (!s.plan) return s;
-  const rec = buildDayRecord(s.plan, learning, now);
+  let rec = buildDayRecord(s.plan, learning, now);
+
+  let updatedProjects = s.projects;
+
+  // Apply outcome evaluations to authoritative projects
+  if (outcomeEvaluations && outcomeEvaluations.length > 0) {
+    const doneTasks = s.plan.tasks.filter(
+      (t) => t.selected && t.status === "done",
+    );
+    for (const evalPayload of outcomeEvaluations) {
+      const projIdx = updatedProjects.findIndex(
+        (p) => p.id === evalPayload.projectId,
+      );
+      if (projIdx !== -1 && updatedProjects[projIdx]?.executionPlan) {
+        const proj = updatedProjects[projIdx]!;
+        const linkedTasks = doneTasks
+          .filter((t) => t.projectId === proj.id)
+          .map((t) => ({
+            taskId: t.id,
+            taskTitle: t.title,
+            output: t.output,
+            elapsedMinutes: Math.round(t.elapsedMs / 60000),
+          }));
+
+        const { project: evaluatedProj } = evaluateDailyOutcome(
+          proj,
+          evalPayload.outcomeId,
+          {
+            status: evalPayload.status,
+            actualEvidenceSummary: evalPayload.actualEvidenceSummary,
+            linkedTaskOutputs: linkedTasks,
+            founderNotes: evalPayload.founderNotes,
+          },
+        );
+
+        updatedProjects = [
+          ...updatedProjects.slice(0, projIdx),
+          evaluatedProj,
+          ...updatedProjects.slice(projIdx + 1),
+        ];
+      }
+    }
+
+    const evaluatedAchievedPIds = outcomeEvaluations
+      .filter((e) => e.status === "achieved")
+      .map((e) => updatedProjects.find((p) => p.id === e.projectId)?.priorityId)
+      .filter((id): id is PriorityId => id !== undefined);
+
+    const evaluatedNonAchievedPIds = outcomeEvaluations
+      .filter((e) => e.status !== "achieved")
+      .map((e) => updatedProjects.find((p) => p.id === e.projectId)?.priorityId)
+      .filter((id): id is PriorityId => id !== undefined);
+
+    const adjustedOutcomes = Array.from(
+      new Set([
+        ...rec.outcomesAchieved.filter(
+          (id) => !evaluatedNonAchievedPIds.includes(id),
+        ),
+        ...evaluatedAchievedPIds,
+      ]),
+    );
+
+    rec = {
+      ...rec,
+      outcomesAchieved: adjustedOutcomes,
+    };
+  }
+
   return {
     ...s,
+    projects: updatedProjects,
     history: [...s.history.filter((h) => h.date !== rec.date), rec],
     plan: null,
     activeTaskId: null,

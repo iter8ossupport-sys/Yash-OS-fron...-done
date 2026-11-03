@@ -125,15 +125,49 @@
 @layer base {
   * {
     border-color: var(--color-border);
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.35 0.05 260 / 0.5) transparent;
   }
-  html,
-  body {
-    font-family: var(--font-sans);
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: oklch(0.35 0.05 260 / 0.5);
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.48 0.08 260 / 0.7);
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  html {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    min-height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
   }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    min-height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  html,
+  body {
+    font-family: var(--font-sans);
   }
   h1,
   h2,
@@ -143,29 +177,11 @@
     letter-spacing: -0.02em;
   }
 
-  /* Dark glass textareas and form controls without browser-native white widgets */
-  textarea,
-  input,
-  select {
+  /* Form controls color-scheme */
+  .dark textarea,
+  .dark input,
+  .dark select {
     color-scheme: dark;
-  }
-  textarea {
-    scrollbar-width: thin;
-    scrollbar-color: oklch(0.35 0.05 260 / 0.5) transparent;
-  }
-  textarea::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  textarea::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  textarea::-webkit-scrollbar-thumb {
-    background: oklch(0.35 0.05 260 / 0.5);
-    border-radius: 9999px;
-  }
-  textarea::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.48 0.08 260 / 0.7);
   }
   textarea::-webkit-resizer {
     background: transparent;
@@ -176,10 +192,13 @@
 
 @utility atmosphere {
   position: fixed;
-  inset: 0;
+  inset: -5%;
+  width: 110%;
+  height: 110%;
   z-index: 0;
   pointer-events: none;
-  background:
+  background-color: var(--background);
+  background-image:
     radial-gradient(60% 50% at 15% 10%, var(--atmo-1), transparent 70%),
     radial-gradient(50% 50% at 90% 20%, var(--atmo-2), transparent 70%),
     radial-gradient(60% 60% at 60% 100%, var(--atmo-3), transparent 70%);

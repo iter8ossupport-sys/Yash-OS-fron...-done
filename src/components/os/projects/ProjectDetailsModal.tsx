@@ -20,6 +20,8 @@ import { ProjectDocumentsTab } from "./ProjectDocumentsTab";
 import { ProjectExecutionPlanTab } from "./ProjectExecutionPlanTab";
 import { ProjectPerformanceTab } from "./ProjectPerformanceTab";
 import { LegalComplianceEditorModal } from "./LegalComplianceEditorModal";
+import { ProjectDocumentEditorModal } from "./ProjectDocumentEditorModal";
+import { ensureCanonicalProjectDocuments } from "@/lib/os/logic";
 
 export interface ProjectDetailsModalProps {
   project: Project;
@@ -47,7 +49,12 @@ export function ProjectDetailsModal({
   onSetActive,
   onOpenDocEditor,
 }: ProjectDetailsModalProps) {
-  const [draft, setDraft] = useState<Project>(project);
+  const [draft, setDraft] = useState<Project>(() =>
+    ensureCanonicalProjectDocuments(project),
+  );
+  const [editingDoc, setEditingDoc] = useState<
+    ProjectDoc | ProjectDocument | null
+  >(null);
   const [activeTab, setActiveTab] = useState<ProjectDetailTabId>("overview");
   const [showComplianceModal, setShowComplianceModal] = useState(false);
   const [customCatInput, setCustomCatInput] = useState("");
@@ -61,6 +68,7 @@ export function ProjectDetailsModal({
       return;
     }
     onSave(draft);
+    onClose();
   };
 
   const handleToggleCategory = (cat: string) => {
@@ -173,7 +181,10 @@ export function ProjectDetailsModal({
                 : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground",
             )}
           >
-            <FileText className="h-3.5 w-3.5" /> 5 Documents
+            <FileText className="h-3.5 w-3.5" />{" "}
+            {draft.priorityId === 2 && draft.workstream === "B"
+              ? "6 Documents"
+              : "5 Documents"}
           </button>
 
           <button
@@ -222,7 +233,10 @@ export function ProjectDetailsModal({
         {activeTab === "documents" && (
           <ProjectDocumentsTab
             draft={draft}
-            onOpenDocEditor={onOpenDocEditor}
+            onOpenDocEditor={(doc) => {
+              setEditingDoc(doc);
+              onOpenDocEditor?.(doc);
+            }}
             onOpenStructuredPlan={() => setActiveTab("execution_plan")}
             onOpenComplianceEditor={() => setShowComplianceModal(true)}
           />
@@ -261,6 +275,54 @@ export function ProjectDetailsModal({
           </div>
         </div>
       </div>
+      {/* Standardized Project Document Editor Modal */}
+      {editingDoc && (
+        <ProjectDocumentEditorModal
+          project={draft}
+          doc={editingDoc}
+          onClose={() => setEditingDoc(null)}
+          onOpenStructuredPlan={() => {
+            setEditingDoc(null);
+            setActiveTab("execution_plan");
+          }}
+          onSave={(savedDoc) => {
+            const currentDocs = (draft.docs ?? []) as (
+              ProjectDoc | ProjectDocument
+            )[];
+            const exists = currentDocs.some((d) => d.id === savedDoc.id);
+            const updatedDocs = exists
+              ? currentDocs.map((d) => (d.id === savedDoc.id ? savedDoc : d))
+              : [...currentDocs, savedDoc];
+
+            const updatedDraft: Project = { ...draft, docs: updatedDocs };
+            if ("type" in savedDoc) {
+              if (savedDoc.type === "evidence_experiments") {
+                updatedDraft.evidence = savedDoc.content;
+              } else if (savedDoc.type === "decisions_history") {
+                updatedDraft.decisions = savedDoc.content;
+              } else if (savedDoc.type === "methods_knowledge") {
+                updatedDraft.learning = savedDoc.content;
+              }
+            }
+
+            setDraft(updatedDraft);
+            onSave(updatedDraft);
+            setEditingDoc(null);
+          }}
+          onDelete={(docId) => {
+            const currentDocs = (draft.docs ?? []) as (
+              ProjectDoc | ProjectDocument
+            )[];
+            const updatedDocs = currentDocs.filter((d) => d.id !== docId);
+            const updatedDraft: Project = { ...draft, docs: updatedDocs };
+            setDraft(updatedDraft);
+            onSave(updatedDraft);
+            setEditingDoc(null);
+            toast.success("Document deleted");
+          }}
+        />
+      )}
+
       {/* Legal & Compliance Editor Modal */}
       {showComplianceModal && (
         <LegalComplianceEditorModal
@@ -270,6 +332,7 @@ export function ProjectDetailsModal({
           onSave={(updated) => {
             setDraft(updated);
             setShowComplianceModal(false);
+            onSave(updated);
           }}
         />
       )}

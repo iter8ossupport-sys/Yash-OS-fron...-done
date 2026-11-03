@@ -1,3 +1,4 @@
+import { createDefaultLegalComplianceDoc } from "./reviews/migrations";
 import { evaluateDailyOutcome } from "./projects/logic";
 import type {
   DayRecord,
@@ -7,6 +8,7 @@ import type {
   Project,
   ProjectDoc,
   ProjectDocument,
+  StructuredExecutionPlan,
   Task,
   TradingOperatingProfile,
   FinancialTransitionPlan,
@@ -428,7 +430,206 @@ export function setActiveProject(
  *   - Priority A clears its activeProjectId if this project was active.
  *   - Priority B only adopts this project as active if Priority B currently has NO active project (does NOT overwrite).
  */
-export function saveProject(s: OSState, project: Project): OSState {
+/**
+ * Ensures Priority 2 Workstream B projects have Document 6 (Legal & Compliance) initialized.
+ * Guaranteed: NEVER adds Document 6 to Workstream A or Priority 1 or 3 projects.
+ */
+/**
+ * Ensures all standardized documents (Documents 1–5, and Document 6 for Workstream B)
+ * are initialized, functional, and consistent with the project's canonical state.
+ * - Doc 1: Project Brief (flexible markdown)
+ * - Doc 2: Structured Execution Plan (authoritative structured plan and doc navigation handle)
+ * - Doc 3: Evidence & Experiments (market evidence, customer validation)
+ * - Doc 4: Decisions & History (ADRs, pivots, rationale)
+ * - Doc 5: Methods & Knowledge (SOPs, playbooks)
+ * - Doc 6: Legal & Compliance (Fintech Workstream B ONLY; strictly stripped for Workstream A and others)
+ */
+export function ensureCanonicalProjectDocuments(project: Project): Project {
+  const now = new Date().toISOString();
+  const createdAt = project.createdAt || now;
+  const docs = (project.docs ? [...project.docs] : []) as (
+    ProjectDoc | ProjectDocument
+  )[];
+
+  // Helper to find document by type
+  const findDocIndex = (type: string) =>
+    docs.findIndex((d) => "type" in d && (d as ProjectDocument).type === type);
+
+  // 1. Ensure Doc 1: Project Brief
+  const briefIdx = findDocIndex("project_brief");
+  if (briefIdx < 0) {
+    const briefContent =
+      project.objective || project.hypothesis
+        ? `# ${project.name} — Project Brief\n\n## Objective\n${project.objective || "Not specified"}\n\n## Core Hypothesis\n${project.hypothesis || "Not specified"}\n`
+        : `# ${project.name} — Project Brief\n\n## Objective\nDefine project objective and thesis.\n\n## Target Outcome\nDefine target customers and expected results.\n`;
+    docs.unshift({
+      id: `doc-brief-${project.id}`,
+      projectId: project.id,
+      type: "project_brief",
+      title: "Project Brief",
+      content: briefContent,
+      flexibleContent: { markdown: briefContent },
+      version: 1,
+      createdAt,
+      updatedAt: now,
+    });
+  }
+
+  // 2. Ensure Doc 2: Structured Execution Plan and project.executionPlan
+  let executionPlan = project.executionPlan;
+  const activeMilestones = (project.milestones ?? []).filter(
+    (m) => m.status === "active" || m.isPrimaryActive,
+  );
+  const activeGoalText =
+    project.goals?.find((g) => g.id === project.activeGoalId)?.text ||
+    project.objective ||
+    "Core execution plan";
+
+  if (!executionPlan) {
+    executionPlan = {
+      projectId: project.id,
+      activeGoalId:
+        project.activeGoalId ??
+        (project.goals?.[0]?.id || `goal-${project.id}`),
+      activeMilestoneIds: activeMilestones.map((m) => m.id),
+      originalBaseline: {
+        setAt: createdAt,
+        goalSnapshotText: activeGoalText,
+        milestoneTitles: activeMilestones.map((m) => m.title),
+        outcomes: { monthly: [], weekly: [], daily: [] },
+      },
+      currentApproved: {
+        version: 1,
+        approvedAt: createdAt,
+        outcomes: { monthly: [], weekly: [], daily: [] },
+        recommendedTasks: [],
+      },
+      proposedRevisions: [],
+    };
+  }
+
+  const planDocIdx = findDocIndex("execution_plan");
+  if (planDocIdx < 0) {
+    docs.push({
+      id: `doc-plan-${project.id}`,
+      projectId: project.id,
+      type: "execution_plan",
+      title: "Execution Plan",
+      content: `Authoritative Structured Execution Plan v${executionPlan.currentApproved.version}`,
+      version: executionPlan.currentApproved.version,
+      createdAt,
+      updatedAt: now,
+    });
+  }
+
+  // 3. Ensure Doc 3: Evidence & Experiments
+  const evidenceIdx = findDocIndex("evidence_experiments");
+  if (evidenceIdx < 0) {
+    const evidenceContent = project.evidence
+      ? `## Recorded Evidence\n\n${project.evidence}\n`
+      : "## Evidence & Experiments\n\nDocument customer interview notes, pilot usage data, conversion proof, and LOIs.\n";
+    docs.push({
+      id: `doc-evidence-${project.id}`,
+      projectId: project.id,
+      type: "evidence_experiments",
+      title: "Evidence & Experiments",
+      content: evidenceContent,
+      flexibleContent: { markdown: evidenceContent },
+      version: 1,
+      createdAt,
+      updatedAt: now,
+    });
+  }
+
+  // 4. Ensure Doc 4: Decisions & History
+  const decisionsIdx = findDocIndex("decisions_history");
+  if (decisionsIdx < 0) {
+    const decisionsContent = project.decisions
+      ? `## Historical Decisions\n\n${project.decisions}\n`
+      : "## Decisions & History\n\nArchitectural decision records (ADRs), pricing models, and strategic rationale.\n";
+    docs.push({
+      id: `doc-decisions-${project.id}`,
+      projectId: project.id,
+      type: "decisions_history",
+      title: "Decisions & History",
+      content: decisionsContent,
+      flexibleContent: { markdown: decisionsContent },
+      version: 1,
+      createdAt,
+      updatedAt: now,
+    });
+  }
+
+  // 5. Ensure Doc 5: Methods & Knowledge
+  const methodsIdx = findDocIndex("methods_knowledge");
+  if (methodsIdx < 0) {
+    const methodsContent = project.learning
+      ? `## Methods & Execution Lessons\n\n${project.learning}\n`
+      : "## Methods & Knowledge\n\nRepeatable execution playbooks, SOPs, and domain knowledge distilled from shipping.\n";
+    docs.push({
+      id: `doc-methods-${project.id}`,
+      projectId: project.id,
+      type: "methods_knowledge",
+      title: "Methods & Knowledge",
+      content: methodsContent,
+      flexibleContent: { markdown: methodsContent },
+      version: 1,
+      createdAt,
+      updatedAt: now,
+    });
+  }
+
+  // 6. Ensure Doc 6: Legal & Compliance (Priority 2 Workstream B ONLY)
+  let complianceContent = project.complianceContent;
+  if (project.priorityId === 2 && project.workstream === "B") {
+    const complianceDocIdx = findDocIndex("legal_compliance");
+    if (complianceDocIdx < 0) {
+      const defaultDoc = createDefaultLegalComplianceDoc(project.id, createdAt);
+      docs.push(defaultDoc);
+      complianceContent = defaultDoc.complianceContent;
+    } else {
+      const existingDoc = docs[complianceDocIdx] as ProjectDocument;
+      if (!complianceContent && existingDoc.complianceContent) {
+        complianceContent = existingDoc.complianceContent;
+      }
+    }
+  } else {
+    // Strictly strip Document 6 if NOT Priority 2 Workstream B
+    const filteredDocs = docs.filter(
+      (d) =>
+        !("type" in d && (d as ProjectDocument).type === "legal_compliance"),
+    );
+    return {
+      ...project,
+      executionPlan,
+      complianceContent: undefined,
+      docs: filteredDocs,
+    };
+  }
+
+  return {
+    ...project,
+    executionPlan,
+    complianceContent,
+    docs,
+  };
+}
+
+export const ensureWorkstreamBDocuments = ensureCanonicalProjectDocuments;
+export function saveProject(s: OSState, rawProject: Project): OSState {
+  let project = rawProject;
+  if (rawProject.priorityId === 2 && rawProject.workstream === "B") {
+    project = ensureWorkstreamBDocuments(rawProject);
+  } else {
+    const filteredDocs = rawProject.docs?.filter(
+      (d) => !("type" in d && d.type === "legal_compliance"),
+    );
+    project = {
+      ...rawProject,
+      complianceContent: undefined,
+      docs: filteredDocs,
+    };
+  }
   const existing = s.projects.find((x) => x.id === project.id);
   const isReassigned = existing && existing.priorityId !== project.priorityId;
   const oldPriorityId = existing?.priorityId;

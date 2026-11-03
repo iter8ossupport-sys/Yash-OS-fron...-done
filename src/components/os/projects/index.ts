@@ -12,3 +12,6 @@ export * from "./ProjectExecutionPlanTab";
 export * from "./ProjectPerformanceTab";
 export * from "./LegalComplianceEditorModal";
 export * from "./Priority2CashflowSection";
+export * from "./Priority3LearningSection";
+export * from "./LearningWorkspaceModal";
+export * from "./PortfolioHierarchyTree";

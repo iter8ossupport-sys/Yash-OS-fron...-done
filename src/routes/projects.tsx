@@ -24,7 +24,10 @@ import {
   CreateProjectModal,
   ProjectDocumentEditorModal,
   Priority2CashflowSection,
+  Priority3LearningSection,
+  LearningWorkspaceModal,
   LegalComplianceEditorModal,
+  PortfolioHierarchyTree,
 } from "@/components/os/projects";
 import {
   TradingOperationModal,
@@ -54,6 +57,9 @@ function ProjectsPage() {
   const [creatingPriority, setCreatingPriority] = useState<PriorityId | null>(
     null,
   );
+  const [creatingWorkstream, setCreatingWorkstream] = useState<
+    "A" | "B" | null
+  >(null);
   const [isCreating, setIsCreating] = useState(false);
 
   // Exactly one project's details open at a time in the wide centered layout
@@ -68,6 +74,7 @@ function ProjectsPage() {
   } | null>(null);
 
   const [isTradingModalOpen, setIsTradingModalOpen] = useState(false);
+  const [isLearningModalOpen, setIsLearningModalOpen] = useState(false);
   const [isRecordSessionOpen, setIsRecordSessionOpen] = useState(false);
   const [complianceProject, setComplianceProject] = useState<Project | null>(
     null,
@@ -102,8 +109,9 @@ function ProjectsPage() {
     );
   };
 
-  const openCreateModal = (priorityId?: PriorityId) => {
+  const openCreateModal = (priorityId?: PriorityId, workstream?: "A" | "B") => {
     setCreatingPriority(priorityId ?? null);
+    setCreatingWorkstream(workstream ?? null);
     setIsCreating(true);
   };
 
@@ -121,160 +129,18 @@ function ProjectsPage() {
         }
       />
 
-      {/* 1. MAIN LAYOUT — THREE HORIZONTAL PRIORITIES */}
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
-        {PRIORITIES_META.map((meta) => {
-          if (meta.id === 2) {
-            return (
-              <div key={meta.id} className="flex min-w-0 flex-col gap-3">
-                <Glass
-                  className={cn(
-                    "relative border-t-2 p-5 transition-colors",
-                    meta.borderClass,
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <PriorityIcon id={meta.id} />
-                      <div>
-                        <h2 className="font-display text-base font-semibold text-foreground tracking-tight">
-                          {meta.fullName}
-                        </h2>
-                        <span className="text-xs text-muted-foreground">
-                          Priority 2A & 2B Infrastructure
-                        </span>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => setIsTradingModalOpen(true)}
-                      aria-label="Open Trading Workspace"
-                    >
-                      Workspace
-                    </Button>
-                  </div>
-                  <p className="mt-3 text-xs leading-relaxed text-muted-foreground/90">
-                    {meta.purpose}
-                  </p>
-                </Glass>
-                <div className="flex items-center justify-center py-0.5">
-                  <div
-                    className={cn(
-                      "flex h-7 w-7 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-all hover:scale-105",
-                      meta.arrowClass,
-                    )}
-                    title="Projects belonging to Priority #2"
-                    aria-hidden="true"
-                  >
-                    <ArrowDown className="h-3.5 w-3.5 stroke-[2.2]" />
-                  </div>
-                </div>
-                <Priority2CashflowSection
-                  projects={state.projects}
-                  tradingOperation={state.tradingOperation}
-                  onOpenTradingWorkspace={() => setIsTradingModalOpen(true)}
-                  onOpenRecordSession={() => setIsRecordSessionOpen(true)}
-                  onOpenProjectDetails={(id) => setActiveDetailsProjectId(id)}
-                  onOpenCreateFintechProject={() => openCreateModal(2)}
-                  onOpenComplianceTracker={(proj) => setComplianceProject(proj)}
-                />
-              </div>
-            );
-          }
-
-          const priorityProjects = state.projects.filter(
-            (p) => p.priorityId === meta.id,
-          );
-
-          return (
-            <div key={meta.id} className="flex min-w-0 flex-col gap-3">
-              {/* Priority Header Card */}
-              <Glass
-                className={cn(
-                  "relative border-t-2 p-5 transition-colors",
-                  meta.borderClass,
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <PriorityIcon id={meta.id} />
-                    <div>
-                      <h2 className="font-display text-base font-semibold text-foreground tracking-tight">
-                        {meta.fullName}
-                      </h2>
-                      <span className="text-xs text-muted-foreground">
-                        {priorityProjects.length}{" "}
-                        {priorityProjects.length === 1 ? "project" : "projects"}
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => openCreateModal(meta.id)}
-                    aria-label={`Add project to ${meta.name}`}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Add
-                  </Button>
-                </div>
-
-                {/* Permanent Core Purpose */}
-                <p className="mt-3 text-xs leading-relaxed text-muted-foreground/90">
-                  {meta.purpose}
-                </p>
-              </Glass>
-
-              {/* 1. PRIORITY → PROJECT VISUAL CONNECTION */}
-              {/* Subtle, premium directional arrow communicating the project belongs to this priority */}
-              <div className="flex items-center justify-center py-0.5">
-                <div
-                  className={cn(
-                    "flex h-7 w-7 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-all hover:scale-105",
-                    meta.arrowClass,
-                  )}
-                  title={`Projects belonging to Priority #${meta.id}`}
-                  aria-hidden="true"
-                >
-                  <ArrowDown className="h-3.5 w-3.5 stroke-[2.2]" />
-                </div>
-              </div>
-
-              {/* 2. COLLAPSED PROJECTS LIST UNDER THIS PRIORITY */}
-              <div className="flex flex-col gap-3">
-                {priorityProjects.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-glass-border/70 p-6 text-center text-xs text-muted-foreground">
-                    No projects under {meta.name} yet.
-                    <div className="mt-2">
-                      <Button
-                        variant="glass"
-                        size="sm"
-                        onClick={() => openCreateModal(meta.id)}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Create first project
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  priorityProjects.map((project) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      onOpenDetails={() =>
-                        setActiveDetailsProjectId(project.id)
-                      }
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {/* 1. PORTFOLIO HIERARCHY TREE LAYOUT */}
+      <PortfolioHierarchyTree
+        projects={state.projects}
+        tradingOperation={state.tradingOperation ?? null}
+        onOpenProjectDetails={(id) => setActiveDetailsProjectId(id)}
+        onOpenCreateProject={(priorityId, workstream) =>
+          openCreateModal(priorityId, workstream)
+        }
+        onOpenTradingWorkspace={() => setIsTradingModalOpen(true)}
+        onOpenRecordSession={() => setIsRecordSessionOpen(true)}
+        onOpenLearningWorkspace={() => setIsLearningModalOpen(true)}
+      />
 
       {/* 2. PROJECT DETAILS — WIDE CENTERED LAYOUT (Only 1 project open at a time) */}
       {activeProject && (
@@ -351,12 +217,20 @@ function ProjectsPage() {
       {/* Fast Record Daily Session Modal */}
       {isRecordSessionOpen && state.tradingOperation && (
         <RecordTradingSessionModal
-          tradingOperation={state.tradingOperation}
+          tradingOperation={state.tradingOperation ?? null}
           onClose={() => setIsRecordSessionOpen(false)}
           onSave={(rec) => {
             update((s) => recordTradingSession(s, rec));
             setIsRecordSessionOpen(false);
           }}
+        />
+      )}
+
+      {/* Priority 3 Learning Workspace Modal */}
+      {isLearningModalOpen && (
+        <LearningWorkspaceModal
+          open={isLearningModalOpen}
+          onClose={() => setIsLearningModalOpen(false)}
         />
       )}
 

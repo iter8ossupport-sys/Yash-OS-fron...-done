@@ -1119,3 +1119,6 @@ export function saveLegalComplianceContent(
     projects: updatedProjects,
   };
 }
+
+// Re-export Priority 3 Learning for Execution logic
+export * from "./learning/state";

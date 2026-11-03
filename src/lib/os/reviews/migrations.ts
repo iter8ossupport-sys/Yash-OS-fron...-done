@@ -494,6 +494,14 @@ export function migrateSkillsToLearningSystem(
 
   return {
     id: "learning-system-core",
+    version: 1,
+    journeys: [],
+    resources: [],
+    sessions: [],
+    applications: [],
+    capabilities: [],
+    knowledgeArtifacts: [],
+    reviews: [],
     coreDocument: {
       title: "Learning & Knowledge Operating System",
       markdownContent: `# Learning for Execution\n\nLearn fundamentals that increase the quality, speed and precision of execution, so every future cycle of building becomes better.\n\n${

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowDown, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useOS } from "@/lib/os/store";
 import {
@@ -9,23 +9,11 @@ import {
   setActiveProject,
   recordTradingSession,
 } from "@/lib/os/logic";
-import type {
-  PriorityId,
-  Project,
-  ProjectDoc,
-  ProjectDocument,
-} from "@/lib/os/types";
-import { Button, Glass, PageHeader, PriorityIcon } from "@/components/os/ui";
-import { cn } from "@/lib/utils";
+import type { PriorityId, Project } from "@/lib/os/types";
+import { Button, PageHeader } from "@/components/os/ui";
 import {
-  PRIORITIES_META,
-  ProjectCard,
   ProjectDetailsModal,
   CreateProjectModal,
-  ProjectDocumentEditorModal,
-  Priority2CashflowSection,
-  Priority3LearningSection,
-  LearningWorkspaceModal,
   LegalComplianceEditorModal,
   PortfolioHierarchyTree,
 } from "@/components/os/projects";
@@ -33,6 +21,7 @@ import {
   TradingOperationModal,
   RecordTradingSessionModal,
 } from "@/components/os/trading";
+import { Priority3LearningWorkspaceModal } from "@/components/os/learning";
 
 export const Route = createFileRoute("/projects")({
   head: () => ({
@@ -66,12 +55,6 @@ function ProjectsPage() {
   const [activeDetailsProjectId, setActiveDetailsProjectId] = useState<
     string | null
   >(null);
-
-  // Active document editor modal state
-  const [docModal, setDocModal] = useState<{
-    project: Project;
-    doc: ProjectDoc | ProjectDocument | null;
-  } | null>(null);
 
   const [isTradingModalOpen, setIsTradingModalOpen] = useState(false);
   const [isLearningModalOpen, setIsLearningModalOpen] = useState(false);
@@ -163,50 +146,26 @@ function ProjectsPage() {
               active ? activeProject.id : null,
             )
           }
-          onOpenDocEditor={(doc) =>
-            setDocModal({ project: activeProject, doc })
-          }
         />
       )}
 
-      {/* 7. New Project Modal */}
+      {/* 3. New Project Modal */}
       {isCreating && (
         <CreateProjectModal
           defaultPriority={creatingPriority}
           onClose={() => setIsCreating(false)}
           onCreate={(newProj) => {
-            handleSaveProject(newProj);
+            const projectWithWorkstream: Project = {
+              ...newProj,
+              workstream: creatingWorkstream ?? newProj.workstream,
+            };
+            handleSaveProject(projectWithWorkstream);
             setIsCreating(false);
           }}
         />
       )}
 
-      {/* 6. Document Viewer / Editor Modal */}
-      {docModal && (
-        <ProjectDocumentEditorModal
-          project={docModal.project}
-          doc={docModal.doc}
-          onClose={() => setDocModal(null)}
-          onSave={(savedDoc) => {
-            const currentDocs = docModal.project.docs ?? [];
-            const exists = currentDocs.some((d) => d.id === savedDoc.id);
-            const updatedDocs = exists
-              ? currentDocs.map((d) => (d.id === savedDoc.id ? savedDoc : d))
-              : [...currentDocs, savedDoc];
-            handleSaveProject({ ...docModal.project, docs: updatedDocs });
-            setDocModal(null);
-          }}
-          onDelete={(docId) => {
-            const currentDocs = docModal.project.docs ?? [];
-            const updatedDocs = currentDocs.filter((d) => d.id !== docId);
-            handleSaveProject({ ...docModal.project, docs: updatedDocs });
-            setDocModal(null);
-            toast.success("Document deleted");
-          }}
-        />
-      )}
-
-      {/* Trading Operation Modal */}
+      {/* 4. Trading Operation Modal */}
       {isTradingModalOpen && (
         <TradingOperationModal
           open={isTradingModalOpen}
@@ -214,10 +173,10 @@ function ProjectsPage() {
         />
       )}
 
-      {/* Fast Record Daily Session Modal */}
+      {/* 5. Fast Record Daily Session Modal */}
       {isRecordSessionOpen && state.tradingOperation && (
         <RecordTradingSessionModal
-          tradingOperation={state.tradingOperation ?? null}
+          tradingOperation={state.tradingOperation}
           onClose={() => setIsRecordSessionOpen(false)}
           onSave={(rec) => {
             update((s) => recordTradingSession(s, rec));
@@ -226,15 +185,17 @@ function ProjectsPage() {
         />
       )}
 
-      {/* Priority 3 Learning Workspace Modal */}
+      {/* 6. Priority 3 Learning Workspace Modal */}
       {isLearningModalOpen && (
-        <LearningWorkspaceModal
+        <Priority3LearningWorkspaceModal
           open={isLearningModalOpen}
           onClose={() => setIsLearningModalOpen(false)}
+          state={state}
+          onUpdateState={(fn) => update(fn)}
         />
       )}
 
-      {/* Standalone Legal & Compliance Editor Modal */}
+      {/* 7. Standalone Legal & Compliance Editor Modal */}
       {complianceProject && (
         <LegalComplianceEditorModal
           open={Boolean(complianceProject)}

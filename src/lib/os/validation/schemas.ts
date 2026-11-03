@@ -594,14 +594,161 @@ export const TradingOperationSchema = z.object({
   updatedAt: z.string(),
 });
 
+export const LearningResourceTypeSchema = z.enum([
+  "book",
+  "course",
+  "documentation",
+  "academic_paper",
+  "mentor_or_expert",
+  "empirical_experiment",
+  "codebase_study",
+  "other",
+]);
+
+export const LearningResourceStatusSchema = z.enum([
+  "queued",
+  "active",
+  "referenced",
+  "completed",
+  "abandoned",
+]);
+
+export const CapabilityProficiencySchema = z.enum([
+  "nascent",
+  "demonstrated_in_practice",
+  "mastered_autonomous",
+]);
+
+export const LearningAreaLevelSchema = z.enum([
+  "fundamentals",
+  "intermediate",
+  "advanced_execution",
+]);
+
+export const LearningObjectiveSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1, "Objective title is required"),
+  targetCapabilityId: z.string().optional(),
+  linkedPriorityId: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  linkedProjectId: z.string().optional(),
+  status: z.enum(["active", "achieved", "deferred"]),
+  targetDeadline: z.string().optional(),
+  evidenceSummary: z.string().optional(),
+  createdAt: z.string(),
+  achievedAt: z.string().optional(),
+});
+
+export const LearningProfileSchema = z.object({
+  id: z.string().min(1),
+  founderPhilosophy: z.string().min(1),
+  coreObjectives: z.array(LearningObjectiveSchema),
+  primaryFocusAreaId: z.string().optional(),
+  lastSelfAssessmentAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const LearningAreaSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1, "Area name is required"),
+  description: z.string().default(""),
+  level: LearningAreaLevelSchema,
+  parentAreaId: z.string().optional(),
+  relevanceToMission: z.string().default(""),
+  targetPriorityId: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  order: z.number().int().nonnegative().default(0),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const LearningResourceSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1, "Resource title is required"),
+  type: LearningResourceTypeSchema,
+  authorOrSource: z.string().min(1, "Author or source is required"),
+  areaId: z.string().min(1, "Area reference is required"),
+  whyStudying: z.string().min(1, "Execution rationale is required"),
+  status: LearningResourceStatusSchema,
+  urlOrLocation: z.string().optional(),
+  distilledTakeaways: z.array(z.string()).default([]),
+  linkedKnowledgeIds: z.array(z.string()).default([]),
+  linkedCapabilityIds: z.array(z.string()).default([]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  completedAt: z.string().optional(),
+});
+
+export const LearningSessionSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1, "Session title is required"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format must be YYYY-MM-DD"),
+  areaId: z.string().min(1, "Learning area is required"),
+  resourceId: z.string().optional(),
+  targetCapabilityId: z.string().optional(),
+  preThinkQuestion: z.string().min(1, "Pre-think question is mandatory"),
+  conceptLearned: z.string().min(1, "Concept learned is required"),
+  understandingNote: z.string().min(1, "Mental model explanation is required"),
+  uncertainties: z.string().default(""),
+  practicalApplicationPlan: z
+    .string()
+    .min(1, "Practical application plan is required"),
+  appliedPriorityId: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  appliedProjectId: z.string().optional(),
+  appliedTaskId: z.string().optional(),
+  applicationEvidence: z.string().optional(),
+  outcomeAchieved: z.boolean().optional(),
+  promotedKnowledgeIds: z.array(z.string()).default([]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const CapabilityRecordSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1, "Capability name is required"),
+    areaId: z.string().min(1, "Area is required"),
+    proficiency: CapabilityProficiencySchema,
+    targetPriority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+    unblocksProjectId: z.string().optional(),
+    theoryUnderstanding: z.string().default(""),
+    executionEvidence: z.string().default(""),
+    remainingGaps: z.string().default(""),
+    linkedSessionIds: z.array(z.string()).default([]),
+    linkedKnowledgeIds: z.array(z.string()).default([]),
+    lastDemonstratedAt: z.string().optional(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .refine(
+    (data) => {
+      if (
+        data.proficiency === "demonstrated_in_practice" ||
+        data.proficiency === "mastered_autonomous"
+      ) {
+        return (data.executionEvidence ?? "").trim().length > 0;
+      }
+      return true;
+    },
+    {
+      message:
+        "Execution evidence is mandatory when capability is marked demonstrated or mastered",
+      path: ["executionEvidence"],
+    },
+  );
+
 export const LearningKnowledgeSystemSchema = z.object({
   id: z.string().min(1),
+  version: z.number().optional(),
   coreDocument: z.object({
     title: z.string(),
     markdownContent: z.string(),
     lastUpdated: z.string(),
   }),
   activeWorkflow: z.enum(["capability_acquisition", "discovery_synthesis"]),
+  profile: LearningProfileSchema.optional(),
+  areas: z.array(LearningAreaSchema).default([]),
+  resources: z.array(LearningResourceSchema).default([]),
+  sessions: z.array(LearningSessionSchema).default([]),
+  capabilities: z.array(CapabilityRecordSchema).default([]),
   acquisitions: z.array(z.any()).default([]),
   discoveries: z.array(z.any()).default([]),
 });
@@ -616,6 +763,26 @@ export function validateTradingOperation(op: unknown) {
 
 export function validateLearningSystem(sys: unknown) {
   return LearningKnowledgeSystemSchema.safeParse(sys);
+}
+
+export function validateLearningSession(session: unknown) {
+  return LearningSessionSchema.safeParse(session);
+}
+
+export function validateCapabilityRecord(cap: unknown) {
+  return CapabilityRecordSchema.safeParse(cap);
+}
+
+export function validateLearningResource(res: unknown) {
+  return LearningResourceSchema.safeParse(res);
+}
+
+export function validateLearningArea(area: unknown) {
+  return LearningAreaSchema.safeParse(area);
+}
+
+export function validateLearningProfile(profile: unknown) {
+  return LearningProfileSchema.safeParse(profile);
 }
 
 export function validateTask(task: unknown) {

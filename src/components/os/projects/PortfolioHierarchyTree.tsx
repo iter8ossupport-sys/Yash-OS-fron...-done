@@ -62,15 +62,15 @@ export function PortfolioHierarchyTree({
       {/* ─────────────────────────────────────────────────────────────
           ROOT: YASH OS PORTFOLIO
       ───────────────────────────────────────────────────────────── */}
-      <Glass className="relative z-10 w-full max-w-3xl border-t-2 border-t-cyan p-6 shadow-xl transition-all hover:border-cyan/50">
+      <Glass className="relative z-10 w-full max-w-3xl border border-glass-border/80 p-6 shadow-xl transition-all hover:border-glass-border">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan/40 bg-cyan/15 text-cyan shadow-sm">
-              <FolderKanban className="h-6 w-6" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-glass-border/80 bg-secondary/40 text-foreground shadow-sm">
+              <FolderKanban className="h-6 w-6 text-cyan" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="rounded-md border border-cyan/40 bg-cyan/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan">
+                <span className="rounded-md border border-glass-border/80 bg-secondary/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Portfolio Root
                 </span>
                 <span className="text-xs text-muted-foreground">
@@ -110,7 +110,7 @@ export function PortfolioHierarchyTree({
             <span className="block text-[10px] uppercase font-semibold text-muted-foreground">
               P1 Active Lines
             </span>
-            <span className="text-sm font-bold text-p1">
+            <span className="text-sm font-bold text-foreground">
               {activeP1Count} {activeP1Count === 1 ? "Project" : "Projects"}
             </span>
           </div>
@@ -119,7 +119,7 @@ export function PortfolioHierarchyTree({
             <span className="block text-[10px] uppercase font-semibold text-muted-foreground">
               P2 Workstreams
             </span>
-            <span className="text-sm font-bold text-cyan">
+            <span className="text-sm font-bold text-foreground">
               2 Branches (A & B)
             </span>
           </div>
@@ -128,7 +128,7 @@ export function PortfolioHierarchyTree({
             <span className="block text-[10px] uppercase font-semibold text-muted-foreground">
               P3 Execution Lab
             </span>
-            <span className="text-sm font-bold text-violet">
+            <span className="text-sm font-bold text-foreground">
               {activeP3Count} {activeP3Count === 1 ? "Vehicle" : "Vehicles"}
             </span>
           </div>
@@ -161,32 +161,35 @@ export function PortfolioHierarchyTree({
         ========================================================= */}
         <div className="flex min-w-0 flex-col gap-3">
           {/* Branch 1 Header Card */}
-          <Glass className="relative border-t-2 border-t-p1 p-4 shadow-md transition-all hover:border-p1/60">
-            <div className="flex items-start justify-between gap-2 border-b border-glass-border/60 pb-3">
-              <div className="flex items-center gap-2.5">
-                <PriorityIcon id={1} />
-                <div>
+          <Glass className="relative border border-glass-border/80 p-4 shadow-md transition-all hover:border-glass-border hover:bg-secondary/20">
+            <div className="flex items-start gap-3 border-b border-glass-border/60 pb-3">
+              <PriorityIcon
+                id={1}
+                className="h-10 w-10 shrink-0 border-glass-border/80 bg-secondary/40 text-foreground"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2 mb-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="rounded bg-p1/15 px-1.5 py-0.2 text-[10px] font-bold text-p1">
+                    <span className="rounded-md border border-glass-border/80 bg-secondary/40 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                       Priority 1
                     </span>
                     <span className="text-[11px] text-muted-foreground">
                       Core System
                     </span>
                   </div>
-                  <h2 className="font-display text-sm font-semibold text-foreground tracking-tight sm:text-base">
-                    Founder Capability
-                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 shrink-0 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                    onClick={() => onOpenCreateProject(1)}
+                  >
+                    <Plus className="mr-1 h-3 w-3" /> Add Project
+                  </Button>
                 </div>
+                <h2 className="font-display text-base font-semibold text-foreground tracking-tight">
+                  Founder Capability
+                </h2>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => onOpenCreateProject(1)}
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" /> Add Project
-              </Button>
             </div>
             <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
               {PRIORITIES_META[0]?.purpose}
@@ -195,8 +198,8 @@ export function PortfolioHierarchyTree({
 
           {/* Directional Down Connector */}
           <div className="flex items-center justify-center py-0.5">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full border border-p1/30 bg-p1/10 text-p1 shadow-sm">
-              <ArrowDown className="h-3 w-3 stroke-[2.5]" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full border border-glass-border bg-secondary/50 text-muted-foreground shadow-sm">
+              <ArrowDown className="h-3 w-3 stroke-[2]" />
             </div>
           </div>
 
@@ -234,27 +237,30 @@ export function PortfolioHierarchyTree({
         ========================================================= */}
         <div className="flex min-w-0 flex-col gap-3">
           {/* Branch 2 Header Card */}
-          <Glass className="relative border-t-2 border-t-cyan p-4 shadow-md transition-all hover:border-cyan/60">
-            <div className="flex items-start justify-between gap-2 border-b border-glass-border/60 pb-3">
-              <div className="flex items-center gap-2.5">
-                <PriorityIcon id={2} />
-                <div>
+          <Glass className="relative border border-glass-border/80 p-4 shadow-md transition-all hover:border-glass-border hover:bg-secondary/20">
+            <div className="flex items-start gap-3 border-b border-glass-border/60 pb-3">
+              <PriorityIcon
+                id={2}
+                className="h-10 w-10 shrink-0 border-glass-border/80 bg-secondary/40 text-foreground"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2 mb-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="rounded bg-cyan/15 px-1.5 py-0.2 text-[10px] font-bold text-cyan">
+                    <span className="rounded-md border border-glass-border/80 bg-secondary/40 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                       Priority 2
                     </span>
                     <span className="text-[11px] text-muted-foreground">
                       Cashflow Engine
                     </span>
                   </div>
-                  <h2 className="font-display text-sm font-semibold text-foreground tracking-tight sm:text-base">
-                    Cashflow Infrastructure
-                  </h2>
+                  <span className="rounded-md border border-glass-border/80 bg-secondary/40 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    2 Workstreams
+                  </span>
                 </div>
+                <h2 className="font-display text-base font-semibold text-foreground tracking-tight">
+                  Cashflow Infrastructure
+                </h2>
               </div>
-              <Badge className="border-cyan/40 bg-cyan/15 text-[10px] font-bold text-cyan">
-                2 Workstreams
-              </Badge>
             </div>
             <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
               {PRIORITIES_META[1]?.purpose}
@@ -263,8 +269,8 @@ export function PortfolioHierarchyTree({
 
           {/* Directional Down Connector */}
           <div className="flex items-center justify-center py-0.5">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full border border-cyan/30 bg-cyan/10 text-cyan shadow-sm">
-              <ArrowDown className="h-3 w-3 stroke-[2.5]" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full border border-glass-border bg-secondary/50 text-muted-foreground shadow-sm">
+              <ArrowDown className="h-3 w-3 stroke-[2]" />
             </div>
           </div>
 
@@ -273,11 +279,11 @@ export function PortfolioHierarchyTree({
             {/* ─────────────────────────────────────────────────────
                 CHILD BRANCH 2A: WORKSTREAM A — TRADING OPERATION
             ───────────────────────────────────────────────────── */}
-            <div className="rounded-2xl border border-cyan/30 bg-secondary/20 p-4 transition-all hover:border-cyan/50">
+            <div className="rounded-2xl border border-glass-border/80 bg-secondary/20 p-4 transition-all hover:border-glass-border">
               <div className="flex items-start justify-between gap-2 border-b border-glass-border/60 pb-2.5">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="rounded bg-cyan/20 px-1.5 py-0.2 text-[9px] font-bold text-cyan">
+                    <span className="rounded-md border border-glass-border/80 bg-secondary/40 px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
                       Workstream A
                     </span>
                     <span className="text-[10px] text-muted-foreground">
@@ -373,11 +379,11 @@ export function PortfolioHierarchyTree({
             {/* ─────────────────────────────────────────────────────
                 CHILD BRANCH 2B: WORKSTREAM B — FINTECH PRODUCTS
             ───────────────────────────────────────────────────── */}
-            <div className="rounded-2xl border border-cyan/30 bg-secondary/20 p-4 transition-all hover:border-cyan/50">
+            <div className="rounded-2xl border border-glass-border/80 bg-secondary/20 p-4 transition-all hover:border-glass-border">
               <div className="flex items-start justify-between gap-2 border-b border-glass-border/60 pb-2.5">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="rounded bg-cyan/20 px-1.5 py-0.2 text-[9px] font-bold text-cyan">
+                    <span className="rounded-md border border-glass-border/80 bg-secondary/40 px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">
                       Workstream B
                     </span>
                     <span className="text-[10px] text-muted-foreground">
@@ -437,42 +443,46 @@ export function PortfolioHierarchyTree({
         ========================================================= */}
         <div className="flex min-w-0 flex-col gap-3">
           {/* Branch 3 Header Card */}
-          <Glass className="relative border-t-2 border-t-violet p-4 shadow-md transition-all hover:border-violet/60">
-            <div className="flex items-start justify-between gap-2 border-b border-glass-border/60 pb-3">
-              <div className="flex items-center gap-2.5">
-                <PriorityIcon id={3} />
-                <div>
+          <Glass className="relative border border-glass-border/80 p-4 shadow-md transition-all hover:border-glass-border hover:bg-secondary/20">
+            <div className="flex items-start gap-3 border-b border-glass-border/60 pb-3">
+              <PriorityIcon
+                id={3}
+                className="h-10 w-10 shrink-0 border-glass-border/80 bg-secondary/40 text-foreground"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2 mb-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="rounded bg-violet/15 px-1.5 py-0.2 text-[10px] font-bold text-violet">
+                    <span className="rounded-md border border-glass-border/80 bg-secondary/40 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                       Priority 3
                     </span>
                     <span className="text-[11px] text-muted-foreground">
                       Execution Learning
                     </span>
                   </div>
-                  <h2 className="font-display text-sm font-semibold text-foreground tracking-tight sm:text-base">
-                    Learning for Execution
-                  </h2>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                      onClick={onOpenLearningWorkspace}
+                      title="Open Learning Workspace"
+                    >
+                      <Brain className="mr-1 h-3 w-3" /> Workspace
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                      onClick={() => onOpenCreateProject(3)}
+                      title="Add Learning Project"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs text-violet hover:bg-violet/15 hover:text-foreground"
-                  onClick={onOpenLearningWorkspace}
-                  title="Open Learning Workspace"
-                >
-                  <Brain className="mr-1 h-3 w-3" /> Workspace
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                  onClick={() => onOpenCreateProject(3)}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
+                <h2 className="font-display text-base font-semibold text-foreground tracking-tight">
+                  Learning for Execution
+                </h2>
               </div>
             </div>
             <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
@@ -482,8 +492,8 @@ export function PortfolioHierarchyTree({
 
           {/* Directional Down Connector */}
           <div className="flex items-center justify-center py-0.5">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full border border-violet/30 bg-violet/10 text-violet shadow-sm">
-              <ArrowDown className="h-3 w-3 stroke-[2.5]" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full border border-glass-border bg-secondary/50 text-muted-foreground shadow-sm">
+              <ArrowDown className="h-3 w-3 stroke-[2]" />
             </div>
           </div>
 
@@ -551,19 +561,11 @@ function ProjectHierarchyCard({
 
   const deadline = project.deadline || activeMilestone?.deadline;
 
-  const accentBorderHover =
-    accentColor === "p1"
-      ? "hover:border-p1/60"
-      : accentColor === "cyan"
-        ? "hover:border-cyan/60"
-        : "hover:border-violet/60";
-
   return (
     <div
       onClick={onOpenDetails}
       className={cn(
-        "group cursor-pointer rounded-2xl border border-glass-border/80 bg-secondary/30 p-4 transition-all hover:bg-secondary/45",
-        accentBorderHover,
+        "group cursor-pointer rounded-2xl border border-glass-border/80 bg-secondary/30 p-4 transition-all hover:border-glass-border hover:bg-secondary/45",
       )}
       role="button"
       tabIndex={0}

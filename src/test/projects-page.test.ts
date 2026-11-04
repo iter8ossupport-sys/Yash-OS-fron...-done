@@ -155,4 +155,50 @@ describe("Projects Page — Data & Features", () => {
     expect(found.docs?.length ?? 0).toBe(0);
     expect(found.deadline ?? "No deadline set").toBe("No deadline set");
   });
+
+  it("5. Priority 3 project creation auto-synchronizes with Learning System journeys", () => {
+    let s = { ...initialState };
+    const p3NewProject: Project = {
+      id: "p3-distributed-systems",
+      name: "Distributed Consensus Mastery",
+      objective: "Master Raft and Paxos protocols with live implementations",
+      priorityId: 3,
+      status: "active",
+      hypothesis: "Practical protocol implementation builds true capability",
+      milestone: "Ship Raft consensus engine in Rust",
+      metrics: "Pass Jepsen linearizability tests",
+      bottlenecks: "",
+      evidence: "",
+      decisions: "",
+      learning: "",
+      documents: "",
+      createdAt: today(),
+    };
+
+    s = saveProject(s, p3NewProject);
+    const saved = s.projects.find((p) => p.id === "p3-distributed-systems");
+    expect(saved).toBeDefined();
+
+    // Verify learningSystem journey was automatically created and synchronized
+    const journeys = s.learningSystem?.journeys ?? [];
+    const matchedJourney = journeys.find(
+      (j) =>
+        j.id === "journey-" + p3NewProject.id || j.title === p3NewProject.name,
+    );
+    expect(matchedJourney).toBeDefined();
+    expect(matchedJourney?.title).toBe("Distributed Consensus Mastery");
+    expect(matchedJourney?.purposeAndOutcome).toBe(
+      "Master Raft and Paxos protocols with live implementations",
+    );
+    expect(matchedJourney?.status).toBe("active");
+
+    // Deleting the project cleans up the journey
+    s = deleteProject(s, "p3-distributed-systems");
+    const afterDeleteJourneys = s.learningSystem?.journeys ?? [];
+    expect(
+      afterDeleteJourneys.some(
+        (j) => j.id === "journey-p3-distributed-systems",
+      ),
+    ).toBe(false);
+  });
 });

@@ -568,6 +568,27 @@ describe("4. Priority 3 Learning & Capability Architectural Integration & Regres
     expect(handleOpenLearning).toHaveBeenCalledTimes(1);
   });
 
+  it("Priority 3 project card in PortfolioHierarchyTree triggers onOpenLearningWorkspace with project ID", () => {
+    const handleOpenLearning = vi.fn();
+    const handleOpenDetails = vi.fn();
+    render(
+      <PortfolioHierarchyTree
+        projects={initialState.projects}
+        tradingOperation={mockTradingOp}
+        onOpenProjectDetails={handleOpenDetails}
+        onOpenCreateProject={vi.fn()}
+        onOpenTradingWorkspace={vi.fn()}
+        onOpenRecordSession={vi.fn()}
+        onOpenLearningWorkspace={handleOpenLearning}
+      />,
+    );
+
+    const p3ProjectTitle = screen.getByText("Product + Trading Skills");
+    expect(p3ProjectTitle).toBeInTheDocument();
+    fireEvent.click(p3ProjectTitle);
+    expect(handleOpenLearning).toHaveBeenCalledWith("demo-skills");
+  });
+
   it("Priority3LearningWorkspaceModal renders all 6 main views (Overview, Journeys, Resources, Knowledge, Capabilities, Reviews)", () => {
     const testState: OSState = {
       ...initialState,

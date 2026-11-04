@@ -1,7 +1,9 @@
 import { createDefaultLegalComplianceDoc } from "./reviews/migrations";
 import { evaluateDailyOutcome } from "./projects/logic";
+import { ensureLearningSystem } from "./learning/state";
 import type {
   DayRecord,
+  LearningJourney,
   OSState,
   Plan,
   PriorityId,
@@ -701,10 +703,92 @@ export function saveProject(s: OSState, rawProject: Project): OSState {
     });
   }
 
+  // Priority 3 Synchronization: Every project under Priority 3 is a Learning Vehicle / Journey
+  let nextLearningSystem = s.learningSystem;
+  if (project.priorityId === 3) {
+    const learningSys = ensureLearningSystem(s);
+    const journeyId = `journey-${project.id}`;
+    const journeyExists = learningSys.journeys.some(
+      (j) =>
+        j.id === journeyId ||
+        j.id === project.id ||
+        j.title.toLowerCase() === project.name.toLowerCase(),
+    );
+    if (!journeyExists) {
+      const nowIso = new Date().toISOString();
+      const newJourney: LearningJourney = {
+        id: journeyId,
+        title: project.name,
+        description:
+          project.objective ||
+          project.hypothesis ||
+          "Priority 3 Learning & Capability Journey",
+        type: "skill_development",
+        status:
+          project.status === "completed"
+            ? "completed"
+            : project.status === "paused"
+              ? "paused"
+              : "active",
+        purposeAndOutcome:
+          project.objective ||
+          "Build demonstrated capability through execution.",
+        purpose:
+          project.objective ||
+          "Build demonstrated capability through execution.",
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        objectives: [
+          {
+            id: `obj-${project.id}-1`,
+            journeyId,
+            title:
+              project.milestone ||
+              `Execute foundation milestone for ${project.name}`,
+            status: "active",
+            evidenceSummary: "Tracked in Learning & Capability Core Workspace.",
+            createdAt: nowIso,
+          },
+        ],
+      };
+      nextLearningSystem = {
+        ...learningSys,
+        journeys: [...learningSys.journeys, newJourney],
+      };
+    } else {
+      const updatedJourneys = learningSys.journeys.map((j) => {
+        if (
+          j.id === journeyId ||
+          j.id === project.id ||
+          j.title.toLowerCase() === project.name.toLowerCase()
+        ) {
+          return {
+            ...j,
+            title: project.name,
+            purposeAndOutcome: project.objective || j.purposeAndOutcome,
+            status:
+              project.status === "completed"
+                ? ("completed" as const)
+                : project.status === "paused"
+                  ? ("paused" as const)
+                  : ("active" as const),
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return j;
+      });
+      nextLearningSystem = {
+        ...learningSys,
+        journeys: updatedJourneys,
+      };
+    }
+  }
+
   return syncPrioritiesWithProjects({
     ...s,
     projects: updatedProjects,
     priorities,
+    ...(nextLearningSystem ? { learningSystem: nextLearningSystem } : {}),
   });
 }
 
@@ -729,11 +813,27 @@ export function deleteProject(s: OSState, projectId: string): OSState {
     k.projectId === projectId ? { ...k, projectId: undefined } : k,
   );
 
+  // Clean up auto-created Priority 3 journey if present
+  let nextLearningSystem = s.learningSystem;
+  if (nextLearningSystem && nextLearningSystem.journeys) {
+    const journeyId = `journey-${projectId}`;
+    const filteredJourneys = nextLearningSystem.journeys.filter(
+      (j) => j.id !== journeyId && j.id !== projectId,
+    );
+    if (filteredJourneys.length !== nextLearningSystem.journeys.length) {
+      nextLearningSystem = {
+        ...nextLearningSystem,
+        journeys: filteredJourneys,
+      };
+    }
+  }
+
   return syncPrioritiesWithProjects({
     ...s,
     projects: updatedProjects,
     priorities,
     knowledge,
+    ...(nextLearningSystem ? { learningSystem: nextLearningSystem } : {}),
   });
 }
 

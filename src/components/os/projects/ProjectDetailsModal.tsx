@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Brain,
   Check,
   FileText,
   Layers,
@@ -31,6 +32,7 @@ export interface ProjectDetailsModalProps {
   onDelete: () => void;
   onSetActive: (active: boolean) => void;
   onOpenDocEditor?: (doc: ProjectDoc | ProjectDocument | null) => void;
+  onOpenLearningWorkspace?: (projectId?: string) => void;
 }
 
 export type ProjectDetailTabId =
@@ -48,6 +50,7 @@ export function ProjectDetailsModal({
   onDelete,
   onSetActive,
   onOpenDocEditor,
+  onOpenLearningWorkspace,
 }: ProjectDetailsModalProps) {
   const [draft, setDraft] = useState<Project>(() =>
     ensureCanonicalProjectDocuments(project),
@@ -142,6 +145,37 @@ export function ProjectDetailsModal({
             )}
           </Button>
         </div>
+
+        {/* Priority 3 Learning & Capability Core Banner */}
+        {draft.priorityId === 3 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan/40 bg-cyan/10 p-3.5">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan/20 text-cyan">
+                <Brain className="h-4 w-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-foreground">
+                  Priority 3 Learning & Capability Core Workspace
+                </h4>
+                <p className="text-[11px] text-muted-foreground">
+                  This project operates within the authoritative 6-view Learning
+                  & Capability Development system.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="primary"
+              className="h-8 text-xs font-semibold"
+              onClick={() => {
+                onClose();
+                onOpenLearningWorkspace?.(draft.id);
+              }}
+            >
+              <Brain className="mr-1.5 h-3.5 w-3.5" /> Open Learning Workspace
+            </Button>
+          </div>
+        )}
 
         {/* Tab Navigation Navigation Bar */}
         <div className="flex items-center gap-1 overflow-x-auto border-b border-glass-border/70 pb-2">

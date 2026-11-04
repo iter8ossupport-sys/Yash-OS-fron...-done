@@ -1,4 +1,10 @@
-import { FileText, ArrowRight, ShieldCheck, ListTree } from "lucide-react";
+import {
+  Brain,
+  FileText,
+  ArrowRight,
+  ShieldCheck,
+  ListTree,
+} from "lucide-react";
 import { Badge, Button } from "@/components/os/ui";
 import type { Project, ProjectDoc, ProjectDocument } from "@/lib/os/types";
 
@@ -7,6 +13,7 @@ export interface ProjectDocumentsTabProps {
   onOpenDocEditor: (doc: ProjectDoc | ProjectDocument) => void;
   onOpenStructuredPlan: () => void;
   onOpenComplianceEditor?: () => void;
+  onOpenLearningWorkspace?: () => void;
 }
 
 export function ProjectDocumentsTab({
@@ -14,6 +21,7 @@ export function ProjectDocumentsTab({
   onOpenDocEditor,
   onOpenStructuredPlan,
   onOpenComplianceEditor,
+  onOpenLearningWorkspace,
 }: ProjectDocumentsTabProps) {
   const docs = (draft.docs ?? []) as (ProjectDoc | ProjectDocument)[];
 
@@ -102,6 +110,37 @@ export function ProjectDocumentsTab({
           {isWorkstreamB ? "Docs 6/6 Standardized" : "Docs 5/5 Standardized"}
         </Badge>
       </div>
+
+      {/* Priority 3 Core System Notice */}
+      {draft.priorityId === 3 && (
+        <div className="rounded-xl border border-cyan/40 bg-cyan/10 p-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <Brain className="h-5 w-5 text-cyan shrink-0" />
+              <div>
+                <h4 className="text-xs font-semibold text-foreground">
+                  First-Class Learning & Capability System Active
+                </h4>
+                <p className="text-[11px] text-muted-foreground">
+                  In Priority 3, capabilities and evidence are governed directly
+                  through the 6-view Learning & Capability Development System.
+                </p>
+              </div>
+            </div>
+            {onOpenLearningWorkspace && (
+              <Button
+                size="sm"
+                variant="primary"
+                className="h-8 text-xs font-semibold"
+                onClick={onOpenLearningWorkspace}
+              >
+                <Brain className="mr-1.5 h-3.5 w-3.5" /> Launch Learning
+                Workspace
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
         {/* Doc 1: Project Brief */}

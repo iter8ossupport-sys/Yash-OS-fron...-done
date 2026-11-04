@@ -34,7 +34,7 @@ export interface PortfolioHierarchyTreeProps {
   onOpenTradingWorkspace: () => void;
   onOpenRecordSession: () => void;
   /** Architectural safeguard: triggers authoritative Priority3LearningWorkspaceModal from @/components/os/learning */
-  onOpenLearningWorkspace: () => void;
+  onOpenLearningWorkspace: (journeyOrProjectId?: string) => void;
 }
 
 export function PortfolioHierarchyTree({
@@ -465,7 +465,7 @@ export function PortfolioHierarchyTree({
                       variant="ghost"
                       size="sm"
                       className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-                      onClick={onOpenLearningWorkspace}
+                      onClick={() => onOpenLearningWorkspace()}
                       title="Open Learning Workspace"
                     >
                       <Brain className="mr-1 h-3 w-3" /> Workspace
@@ -518,9 +518,11 @@ export function PortfolioHierarchyTree({
                 <ProjectHierarchyCard
                   key={project.id}
                   project={project}
-                  onOpenDetails={() => onOpenProjectDetails(project.id)}
+                  onOpenDetails={() => onOpenLearningWorkspace(project.id)}
+                  onOpenProjectSettings={() => onOpenProjectDetails(project.id)}
                   accentColor="violet"
-                  badgeText="Docs 5/5 Standardized"
+                  badgeText="Learning & Capability Core"
+                  isPriority3={true}
                 />
               ))
             )}
@@ -538,17 +540,21 @@ export function PortfolioHierarchyTree({
 interface ProjectHierarchyCardProps {
   project: Project;
   onOpenDetails: () => void;
+  onOpenProjectSettings?: () => void;
   accentColor: "p1" | "cyan" | "violet";
   badgeText?: string;
   showComplianceBadge?: boolean;
+  isPriority3?: boolean;
 }
 
 function ProjectHierarchyCard({
   project,
   onOpenDetails,
+  onOpenProjectSettings,
   accentColor,
   badgeText,
   showComplianceBadge,
+  isPriority3,
 }: ProjectHierarchyCardProps) {
   const activeGoal =
     project.goals?.find((g) => g.id === project.activeGoalId) ||
@@ -597,9 +603,17 @@ function ProjectHierarchyCard({
         {/* Directional Action Arrow Button */}
         <div
           className="flex h-7 w-7 items-center justify-center rounded-xl border border-glass-border/60 bg-secondary/50 text-muted-foreground transition-all group-hover:border-cyan/40 group-hover:bg-cyan/15 group-hover:text-cyan shrink-0"
-          title="Open Project Workspace"
+          title={
+            isPriority3
+              ? "Open Learning Workspace for this project"
+              : "Open Project Workspace"
+          }
         >
-          <ArrowRight className="h-3.5 w-3.5" />
+          {isPriority3 ? (
+            <Brain className="h-3.5 w-3.5 text-cyan" />
+          ) : (
+            <ArrowRight className="h-3.5 w-3.5" />
+          )}
         </div>
       </div>
 
@@ -635,11 +649,31 @@ function ProjectHierarchyCard({
 
       {/* Badges Footer */}
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-glass-border/40 pt-2 text-[10px] text-muted-foreground">
-        <span>{badgeText || "Docs Standardized"}</span>
+        {isPriority3 ? (
+          <span className="flex items-center gap-1 font-semibold text-cyan">
+            <Brain className="h-3 w-3" />
+            {badgeText || "Learning & Capability Core"}
+          </span>
+        ) : (
+          <span>{badgeText || "Docs Standardized"}</span>
+        )}
         {showComplianceBadge && (
           <span className="flex items-center gap-1 font-semibold text-cyan">
             <ShieldCheck className="h-3 w-3" /> Legal & Compliance
           </span>
+        )}
+        {isPriority3 && onOpenProjectSettings && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenProjectSettings();
+            }}
+            className="text-[10px] text-muted-foreground hover:text-foreground hover:underline"
+            title="Project Settings & Details"
+          >
+            Settings
+          </button>
         )}
       </div>
     </div>

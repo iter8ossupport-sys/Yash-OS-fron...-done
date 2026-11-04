@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -82,6 +82,10 @@ export function Priority3LearningWorkspaceModal({
   const [selectedJourneyId, setSelectedJourneyId] = useState<string | null>(
     initialJourneyId,
   );
+
+  useEffect(() => {
+    setSelectedJourneyId(initialJourneyId ?? null);
+  }, [initialJourneyId]);
 
   // Sub-modal states
   const [isCreateJourneyOpen, setIsCreateJourneyOpen] = useState(false);

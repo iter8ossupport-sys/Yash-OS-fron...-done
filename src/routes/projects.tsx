@@ -23,6 +23,7 @@ import {
 } from "@/components/os/trading";
 // CRITICAL ARCHITECTURAL SAFEGUARD: Priority 3 MUST ALWAYS use Priority3LearningWorkspaceModal from @/components/os/learning. Never replace with obsolete mocks.
 import { Priority3LearningWorkspaceModal } from "@/components/os/learning";
+import { ensureLearningSystem } from "@/lib/os/learning/state";
 
 export const Route = createFileRoute("/projects")({
   head: () => ({
@@ -57,6 +58,9 @@ function ProjectsPage() {
     string | null
   >(null);
 
+  const [selectedLearningJourneyId, setSelectedLearningJourneyId] = useState<
+    string | null
+  >(null);
   const [isTradingModalOpen, setIsTradingModalOpen] = useState(false);
   const [isLearningModalOpen, setIsLearningModalOpen] = useState(false);
   const [isRecordSessionOpen, setIsRecordSessionOpen] = useState(false);
@@ -93,6 +97,74 @@ function ProjectsPage() {
     );
   };
 
+  const handleOpenLearningWorkspace = (journeyOrProjectId?: string) => {
+    if (journeyOrProjectId) {
+      const sys = ensureLearningSystem(state);
+      const proj = state.projects.find((p) => p.id === journeyOrProjectId);
+      const matched = sys.journeys.find(
+        (j) =>
+          j.id === journeyOrProjectId ||
+          j.id === `journey-${journeyOrProjectId}` ||
+          (proj && j.title.toLowerCase() === proj.name.toLowerCase()),
+      );
+      if (!matched && proj) {
+        const journeyId = `journey-${proj.id}`;
+        const newJourney = {
+          id: journeyId,
+          title: proj.name,
+          description:
+            proj.objective ||
+            proj.hypothesis ||
+            "Priority 3 Learning & Capability Journey",
+          type: "skill_development" as const,
+          status:
+            proj.status === "completed"
+              ? ("completed" as const)
+              : proj.status === "paused"
+                ? ("paused" as const)
+                : ("active" as const),
+          purposeAndOutcome:
+            proj.objective ||
+            "Build demonstrated capability through execution.",
+          targetOutcomes: proj.metrics
+            ? [proj.metrics]
+            : ["Demonstrate independent operational capability."],
+          currentMilestone: proj.milestone || undefined,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          objectives: [
+            {
+              id: `obj-${proj.id}-1`,
+              journeyId,
+              title:
+                proj.milestone ||
+                `Execute foundation milestone for ${proj.name}`,
+              status: "active" as const,
+              evidenceSummary:
+                "Tracked in Learning & Capability Core Workspace.",
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        };
+        update((s) => ({
+          ...s,
+          learningSystem: {
+            ...sys,
+            journeys: [...sys.journeys, newJourney],
+          },
+        }));
+        setSelectedLearningJourneyId(journeyId);
+      } else if (matched) {
+        setSelectedLearningJourneyId(matched.id);
+      } else {
+        setSelectedLearningJourneyId(null);
+      }
+    } else {
+      setSelectedLearningJourneyId(null);
+    }
+    setIsLearningModalOpen(true);
+  };
+
   const openCreateModal = (priorityId?: PriorityId, workstream?: "A" | "B") => {
     setCreatingPriority(priorityId ?? null);
     setCreatingWorkstream(workstream ?? null);
@@ -123,7 +195,7 @@ function ProjectsPage() {
         }
         onOpenTradingWorkspace={() => setIsTradingModalOpen(true)}
         onOpenRecordSession={() => setIsRecordSessionOpen(true)}
-        onOpenLearningWorkspace={() => setIsLearningModalOpen(true)}
+        onOpenLearningWorkspace={handleOpenLearningWorkspace}
       />
 
       {/* 2. PROJECT DETAILS — WIDE CENTERED LAYOUT (Only 1 project open at a time) */}
@@ -147,6 +219,10 @@ function ProjectsPage() {
               active ? activeProject.id : null,
             )
           }
+          onOpenLearningWorkspace={(pId?: string) => {
+            setActiveDetailsProjectId(null);
+            handleOpenLearningWorkspace(pId);
+          }}
         />
       )}
 
@@ -190,9 +266,13 @@ function ProjectsPage() {
       {isLearningModalOpen && (
         <Priority3LearningWorkspaceModal
           open={isLearningModalOpen}
-          onClose={() => setIsLearningModalOpen(false)}
+          onClose={() => {
+            setIsLearningModalOpen(false);
+            setSelectedLearningJourneyId(null);
+          }}
           state={state}
           onUpdateState={(fn) => update(fn)}
+          initialJourneyId={selectedLearningJourneyId}
         />
       )}
 

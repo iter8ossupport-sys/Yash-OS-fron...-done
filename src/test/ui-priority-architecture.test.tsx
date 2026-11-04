@@ -12,11 +12,14 @@ import type {
   Project,
   ProjectDocument,
   TradingOperation,
+  OSState,
 } from "@/lib/os/types";
 import { ProjectDocumentsTab } from "@/components/os/projects/ProjectDocumentsTab";
 import { ProjectDetailsModal } from "@/components/os/projects/ProjectDetailsModal";
 import { PortfolioHierarchyTree } from "@/components/os/projects/PortfolioHierarchyTree";
 import { LearningWorkspaceModal } from "@/components/os/projects/LearningWorkspaceModal";
+import { Priority3LearningWorkspaceModal } from "@/components/os/learning/Priority3LearningWorkspaceModal";
+import { createDefaultLearningSystem } from "@/lib/os/learning/state";
 import { AppShell } from "@/components/os/AppShell";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -541,5 +544,159 @@ describe("3. UI Polish & Viewport Integrity", () => {
     const themeToggleBtn = screen.getByLabelText("Toggle theme");
     expect(themeToggleBtn).toBeInTheDocument();
     fireEvent.click(themeToggleBtn);
+  });
+});
+
+describe("4. Priority 3 Learning & Capability Architectural Integration & Regression Safeguards", () => {
+  it("Priority 3 entry point in PortfolioHierarchyTree triggers onOpenLearningWorkspace callback", () => {
+    const handleOpenLearning = vi.fn();
+    render(
+      <PortfolioHierarchyTree
+        projects={initialState.projects}
+        tradingOperation={mockTradingOp}
+        onOpenProjectDetails={vi.fn()}
+        onOpenCreateProject={vi.fn()}
+        onOpenTradingWorkspace={vi.fn()}
+        onOpenRecordSession={vi.fn()}
+        onOpenLearningWorkspace={handleOpenLearning}
+      />,
+    );
+
+    const workspaceBtn = screen.getByTitle("Open Learning Workspace");
+    expect(workspaceBtn).toBeInTheDocument();
+    fireEvent.click(workspaceBtn);
+    expect(handleOpenLearning).toHaveBeenCalledTimes(1);
+  });
+
+  it("Priority3LearningWorkspaceModal renders all 6 main views (Overview, Journeys, Resources, Knowledge, Capabilities, Reviews)", () => {
+    const testState: OSState = {
+      ...initialState,
+      learningSystem: createDefaultLearningSystem(),
+    };
+    const handleUpdate = vi.fn();
+    const handleClose = vi.fn();
+
+    render(
+      <Priority3LearningWorkspaceModal
+        open={true}
+        onClose={handleClose}
+        state={testState}
+        onUpdateState={handleUpdate}
+      />,
+    );
+
+    // Verify modal title
+    expect(
+      screen.getByText("Priority 3: Learning & Capability Development System"),
+    ).toBeInTheDocument();
+
+    // Verify 6 main views navigation tabs exist
+    expect(
+      screen.getByRole("button", { name: /1\.\s*Overview/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /2\.\s*Learning Journeys/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /3\.\s*Canonical Resources/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /4\.\s*Knowledge/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /5\.\s*Capability Matrix/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /6\.\s*Reviews/i }),
+    ).toBeInTheDocument();
+
+    // Verify tab switching to all views
+    fireEvent.click(
+      screen.getByRole("button", { name: /2\.\s*Learning Journeys/i }),
+    );
+    expect(
+      screen.getByText(/Active and archived capability acquisition/i),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /3\.\s*Canonical Resources/i }),
+    );
+    expect(screen.getByText(/Canonical Resource Library/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /4\.\s*Knowledge/i }));
+    expect(
+      screen.getByText(/Distilled Knowledge Artifacts/i),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /5\.\s*Capability Matrix/i }),
+    );
+    expect(screen.getByText(/Founder Capability Matrix/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /6\.\s*Reviews/i }));
+    expect(
+      screen.getByRole("button", { name: /Conduct Review/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("legacy generic 8-stage text is not present, and LearningWorkspaceModal adapter safely forwards to Priority3LearningWorkspaceModal", () => {
+    render(<LearningWorkspaceModal open={true} onClose={vi.fn()} />);
+
+    // Should NOT have the legacy static text
+    expect(
+      screen.queryByText(/2\.\s*Foundational Domains/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Hypothesis & Bottleneck Scoping"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("The Iron Law of Learning for Execution"),
+    ).not.toBeInTheDocument();
+
+    // MUST render the authoritative Priority 3 header
+    expect(
+      screen.getByText("Priority 3: Learning & Capability Development System"),
+    ).toBeInTheDocument();
+  });
+
+  it("persists journey mutations cleanly through onUpdateState", () => {
+    let currentState: OSState = {
+      ...initialState,
+      learningSystem: createDefaultLearningSystem(),
+    };
+    const handleUpdate = vi.fn((updater: (s: OSState) => OSState) => {
+      currentState = updater(currentState);
+    });
+
+    render(
+      <Priority3LearningWorkspaceModal
+        open={true}
+        onClose={vi.fn()}
+        state={currentState}
+        onUpdateState={handleUpdate}
+      />,
+    );
+
+    // Click New Journey
+    const newJourneyBtn = screen.getByRole("button", { name: /New Journey/i });
+    fireEvent.click(newJourneyBtn);
+
+    // Enter journey title and submit
+    const titleInput = screen.getByPlaceholderText(
+      /Design Systems Engineering/i,
+    );
+    fireEvent.change(titleInput, {
+      target: { value: "Regression Shielded Journey" },
+    });
+
+    const createBtn = screen.getByRole("button", { name: /Create Journey/i });
+    fireEvent.click(createBtn);
+
+    expect(handleUpdate).toHaveBeenCalled();
+    expect(
+      currentState.learningSystem?.journeys.some(
+        (j) => j.title === "Regression Shielded Journey",
+      ),
+    ).toBe(true);
   });
 });

@@ -21,6 +21,7 @@ import {
   TradingOperationModal,
   RecordTradingSessionModal,
 } from "@/components/os/trading";
+// CRITICAL ARCHITECTURAL SAFEGUARD: Priority 3 MUST ALWAYS use Priority3LearningWorkspaceModal from @/components/os/learning. Never replace with obsolete mocks.
 import { Priority3LearningWorkspaceModal } from "@/components/os/learning";
 
 export const Route = createFileRoute("/projects")({
@@ -185,7 +186,7 @@ function ProjectsPage() {
         />
       )}
 
-      {/* 6. Priority 3 Learning Workspace Modal */}
+      {/* 6. Priority 3 Learning & Capability Workspace Modal (Authoritative 6-view & 7-journey system) */}
       {isLearningModalOpen && (
         <Priority3LearningWorkspaceModal
           open={isLearningModalOpen}

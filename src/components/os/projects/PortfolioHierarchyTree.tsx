@@ -33,6 +33,7 @@ export interface PortfolioHierarchyTreeProps {
   ) => void;
   onOpenTradingWorkspace: () => void;
   onOpenRecordSession: () => void;
+  /** Architectural safeguard: triggers authoritative Priority3LearningWorkspaceModal from @/components/os/learning */
   onOpenLearningWorkspace: () => void;
 }
 

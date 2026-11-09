@@ -151,7 +151,10 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
                   {f.priorityId && (
-                    <PriorityIcon id={f.priorityId} className="h-6 w-6" />
+                    <PriorityIcon
+                      id={f.priorityId}
+                      className="h-6 w-6 shrink-0 border-glass-border/80 bg-secondary/40 text-foreground"
+                    />
                   )}
                   <span className="font-semibold text-sm text-foreground">
                     {f.title}
@@ -189,8 +192,8 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
       {/* 2. ANALYTICAL INSIGHTS */}
       <div className="space-y-3 pt-2">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-violet" />
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-violet">
+          <span className="h-2 w-2 rounded-full bg-cyan" />
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-cyan">
             2. Analytical Insights ({analyticalInsights.length})
           </h3>
           <span className="text-xs text-muted-foreground">
@@ -203,10 +206,10 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
             <Glass key={ins.id} className="p-5 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <span className="font-semibold text-sm text-foreground flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-violet" />
+                  <Lightbulb className="h-4 w-4 text-cyan" />
                   {ins.title}
                 </span>
-                <Badge className="text-[10px] border-violet/30 text-violet bg-violet/10">
+                <Badge className="text-[10px] border-cyan/30 text-cyan bg-cyan/10">
                   {ins.evidence.confidence}
                 </Badge>
               </div>

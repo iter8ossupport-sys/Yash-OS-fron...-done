@@ -444,7 +444,7 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>P2 Workstream A / B</span>
-            <Zap className="h-4 w-4 text-violet" />
+            <Zap className="h-4 w-4 text-cyan" />
           </div>
           <div className="font-display text-xl font-bold mt-2">
             {fmtMin(summary?.p2WorkstreamMinutes.workstreamA ?? 0)} /{" "}
@@ -515,7 +515,7 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                 />
                 <Bar
                   dataKey="Actual"
-                  fill="var(--violet)"
+                  fill="var(--cyan)"
                   radius={[6, 6, 0, 0]}
                   barSize={28}
                 />

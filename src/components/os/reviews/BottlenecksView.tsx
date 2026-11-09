@@ -404,7 +404,7 @@ export function BottlenecksView() {
                   <div className="flex items-start gap-3">
                     <PriorityIcon
                       id={b.priorityId}
-                      className="h-8 w-8 mt-0.5"
+                      className="h-8 w-8 mt-0.5 shrink-0 border-glass-border/80 bg-secondary/40 text-foreground"
                     />
                     <div>
                       <div className="flex items-center gap-2">

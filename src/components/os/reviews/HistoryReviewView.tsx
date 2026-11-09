@@ -358,7 +358,7 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
               : "Try adjusting your search query or date range filters."}
           </Empty>
         ) : viewMode === "timeline" ? (
-          <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-gradient-to-b before:from-primary before:via-cyan before:to-violet">
+          <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-gradient-to-b before:from-primary before:to-cyan">
             {filteredDays.map((rec) => {
               const totalMin =
                 (rec.actualMin[1] ?? 0) +

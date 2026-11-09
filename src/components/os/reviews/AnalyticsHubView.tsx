@@ -358,7 +358,7 @@ export function AnalyticsHubView({
               <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
                 Daily Consistency
               </div>
-              <div className="font-display text-2xl font-bold mt-1 text-violet">
+              <div className="font-display text-2xl font-bold mt-1 text-foreground">
                 {filteredRecords.length > 0
                   ? Math.round(
                       (aggregate.totalActualHours / filteredRecords.length) *
@@ -615,21 +615,30 @@ export function AnalyticsHubView({
           {/* Priority Allocation Cards */}
           <div className="grid gap-4 md:grid-cols-3">
             {state.priorities.map((p) => {
-              const actual = aggregate.hoursByPriority[p.id] ?? 0;
+              const actual =
+                Math.round((aggregate.hoursByPriority[p.id] ?? 0) * 10) / 10;
               const pct =
                 aggregate.totalActualHours > 0
                   ? Math.round((actual / aggregate.totalActualHours) * 100)
                   : 0;
               return (
-                <Glass key={p.id} className="p-5 flex flex-col justify-between">
+                <Glass
+                  key={p.id}
+                  className="p-5 flex flex-col justify-between border-glass-border/80 bg-secondary/30 transition-all hover:border-glass-border hover:bg-secondary/45"
+                >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <PriorityIcon id={p.id} className="h-5 w-5" />
-                      <span className="font-semibold text-sm">
+                    <div className="flex items-center gap-2.5">
+                      <PriorityIcon
+                        id={p.id}
+                        className="h-8 w-8 shrink-0 border-glass-border/80 bg-secondary/40 text-foreground"
+                      />
+                      <span className="font-semibold text-sm text-foreground">
                         #{p.id} {p.name}
                       </span>
                     </div>
-                    <Badge className="font-mono text-xs">{pct}%</Badge>
+                    <Badge className="border-glass-border/80 bg-secondary/40 font-mono text-xs text-muted-foreground">
+                      {pct}%
+                    </Badge>
                   </div>
 
                   <div className="my-4">
@@ -672,7 +681,7 @@ export function AnalyticsHubView({
                     Workstream A · Cashflow / Trading Execution
                   </span>
                   <span className="font-display text-sm">
-                    {aggregate.p2HoursA}h
+                    {Math.round(aggregate.p2HoursA * 10) / 10}h
                   </span>
                 </div>
                 <Progress
@@ -700,7 +709,7 @@ export function AnalyticsHubView({
                     Workstream B · Fintech Product & Engineering
                   </span>
                   <span className="font-display text-sm">
-                    {aggregate.p2HoursB}h
+                    {Math.round(aggregate.p2HoursB * 10) / 10}h
                   </span>
                 </div>
                 <Progress
@@ -769,7 +778,7 @@ export function AnalyticsHubView({
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Invested Time</span>
                     <span className="font-semibold text-foreground font-display">
-                      {performance.totalActualHours}h
+                      {Math.round(performance.totalActualHours * 10) / 10}h
                     </span>
                   </div>
                   <div className="flex items-center justify-between">

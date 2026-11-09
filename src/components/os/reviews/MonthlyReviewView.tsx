@@ -367,7 +367,7 @@ export function MonthlyReviewView({ initialDate }: MonthlyReviewViewProps) {
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>P2 A / B Monthly Split</span>
-            <Zap className="h-4 w-4 text-violet" />
+            <Zap className="h-4 w-4 text-cyan" />
           </div>
           <div className="font-display text-xl font-bold mt-2">
             {currentSummary.p2HoursWorkstreamA}h /{" "}
@@ -483,7 +483,10 @@ export function MonthlyReviewView({ initialDate }: MonthlyReviewViewProps) {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <PriorityIcon id={p.id} className="h-6 w-6" />
+                    <PriorityIcon
+                      id={p.id}
+                      className="h-6 w-6 shrink-0 border-glass-border/80 bg-secondary/40 text-foreground"
+                    />
                     <span className="font-semibold text-xs">
                       #{p.id} {p.name}
                     </span>
@@ -495,11 +498,7 @@ export function MonthlyReviewView({ initialDate }: MonthlyReviewViewProps) {
                 <div className="text-xs text-foreground font-medium truncate">
                   {p.milestone || "No milestone set"}
                 </div>
-                <Progress
-                  value={goalC.progress}
-                  tone={p.id === 1 ? "p1" : p.id === 2 ? "p2" : "p3"}
-                  className="h-1.5"
-                />
+                <Progress value={goalC.progress} className="h-1.5" />
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
                   <span>Calibrate Progress:</span>
                   <span className="font-mono font-semibold text-foreground">

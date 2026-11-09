@@ -403,7 +403,7 @@ export function WeeklyReviewView({
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>P2 Workstream Split</span>
-            <Zap className="h-4 w-4 text-violet" />
+            <Zap className="h-4 w-4 text-cyan" />
           </div>
           <div className="font-display text-xl font-bold mt-2">
             {summary.p2HoursWorkstreamA}h / {summary.p2HoursWorkstreamB}h
@@ -435,7 +435,7 @@ export function WeeklyReviewView({
               <span className="h-2 w-2 rounded-full bg-cyan" /> #2 Cashflow
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-violet" /> #3 Learning
+              <span className="h-2 w-2 rounded-full bg-cyan/70" /> #3 Learning
             </span>
           </div>
         </div>
@@ -502,7 +502,7 @@ export function WeeklyReviewView({
                 dataKey="P3"
                 name="Priority 3"
                 stackId="a"
-                fill="var(--violet)"
+                fill="oklch(0.55 0.1 245)"
                 radius={[6, 6, 0, 0]}
                 barSize={32}
               />
@@ -545,8 +545,11 @@ export function WeeklyReviewView({
           </h3>
           <div className="space-y-3">
             {state.priorities.map((p) => {
-              const actual = summary.hoursByPriority[p.id] ?? 0;
-              const planned = summary.plannedHoursByPriority[p.id] ?? 0;
+              const actual =
+                Math.round((summary.hoursByPriority[p.id] ?? 0) * 10) / 10;
+              const planned =
+                Math.round((summary.plannedHoursByPriority[p.id] ?? 0) * 10) /
+                10;
               const outPlanned = summary.outcomesByPriority[p.id]?.planned ?? 0;
               const outAchieved =
                 summary.outcomesByPriority[p.id]?.achieved ?? 0;
@@ -562,7 +565,10 @@ export function WeeklyReviewView({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <PriorityIcon id={p.id} className="h-7 w-7" />
+                      <PriorityIcon
+                        id={p.id}
+                        className="h-7 w-7 shrink-0 border-glass-border/80 bg-secondary/40 text-foreground"
+                      />
                       <div>
                         <div className="font-semibold text-xs">
                           #{p.id} {p.name}
@@ -584,11 +590,7 @@ export function WeeklyReviewView({
                       </div>
                     </div>
                   </div>
-                  <Progress
-                    value={pct}
-                    tone={p.id === 1 ? "p1" : p.id === 2 ? "p2" : "p3"}
-                    className="h-1"
-                  />
+                  <Progress value={pct} className="h-1" />
                   <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
                     <span>
                       Outcomes delivered: {outAchieved} / {outPlanned}

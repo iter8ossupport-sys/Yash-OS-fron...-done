@@ -337,6 +337,12 @@ export function calculatePeriodSummary(
     }))
     .sort((a, b) => b.count - a.count);
 
+  ALL_PRIORITIES.forEach((priId) => {
+    hoursByPriority[priId] = Math.round(hoursByPriority[priId] * 10) / 10;
+    plannedHoursByPriority[priId] =
+      Math.round(plannedHoursByPriority[priId] * 10) / 10;
+  });
+
   const startMs = new Date(startDate).getTime();
   const endMs = new Date(endDate).getTime();
   const expectedDaysCount = Math.max(
@@ -546,12 +552,18 @@ export function calculateMilestoneForecast(
   history: DayRecord[],
   windowDays = 14,
 ): MilestoneForecast {
+  const minThreshold = 3;
   const cutoff = new Date(Date.now() - windowDays * 864e5)
     .toISOString()
     .slice(0, 10);
-  const sample = history.filter((h) => h.date >= cutoff);
+  let sample = history.filter((h) => h.date >= cutoff);
 
-  const minThreshold = 3;
+  if (sample.length < minThreshold && history.length >= minThreshold) {
+    // Fall back to most recent historical records (e.g. fixtures or returning after a gap)
+    const sorted = [...history].sort((a, b) => b.date.localeCompare(a.date));
+    sample = sorted.slice(0, Math.min(windowDays, sorted.length));
+  }
+
   if (sample.length < minThreshold || estimatedHoursNeeded <= 0) {
     return {
       priorityId,

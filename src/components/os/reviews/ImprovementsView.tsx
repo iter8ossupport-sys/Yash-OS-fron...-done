@@ -355,7 +355,7 @@ export function ImprovementsView() {
                     {imp.priorityId && (
                       <PriorityIcon
                         id={imp.priorityId}
-                        className="h-8 w-8 mt-0.5"
+                        className="h-8 w-8 mt-0.5 border-glass-border/80 bg-secondary/40 text-foreground"
                       />
                     )}
                     <div>
@@ -416,7 +416,7 @@ export function ImprovementsView() {
                       <Button
                         variant="glass"
                         size="sm"
-                        className="text-xs text-violet hover:bg-violet/10"
+                        className="text-xs text-cyan hover:bg-cyan/10"
                         onClick={() => setPromotingImp(imp)}
                       >
                         <BookMarked className="h-3.5 w-3.5 mr-1" /> Promote to
@@ -425,7 +425,7 @@ export function ImprovementsView() {
                     )}
 
                     {imp.promotedToKnowledgeId && (
-                      <Badge className="border-violet/30 text-violet bg-violet/10">
+                      <Badge className="border-cyan/30 text-cyan bg-cyan/10">
                         Promoted to Knowledge
                       </Badge>
                     )}

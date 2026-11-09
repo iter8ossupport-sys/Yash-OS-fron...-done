@@ -114,6 +114,14 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
     // Missing days are tracked, not silently counted as 0 hours
     expect(summary.totalActualHours).toBeGreaterThan(0);
     expect(summary.repeatedUnfinishedTasks.length).toBeGreaterThan(0);
+
+    // Floating-point precision verification: hoursByPriority must not exhibit IEEE-754 drift
+    Object.values(summary.hoursByPriority).forEach((hrs) => {
+      expect(hrs.toString()).not.toMatch(/\.\d{3,}/);
+    });
+    Object.values(summary.plannedHoursByPriority).forEach((hrs) => {
+      expect(hrs.toString()).not.toMatch(/\.\d{3,}/);
+    });
   });
 
   it("D. Monthly aggregation aggregates directly from daily records without double-counting", () => {

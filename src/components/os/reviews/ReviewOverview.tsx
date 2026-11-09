@@ -61,9 +61,9 @@ interface ReviewOverviewProps {
 }
 
 const PRIORITY_COLORS: Record<PriorityId, string> = {
-  1: "var(--p1)",
-  2: "var(--p2)",
-  3: "var(--p3)",
+  1: "var(--cyan)",
+  2: "var(--primary)",
+  3: "oklch(0.55 0.1 245)",
 };
 
 export function ReviewOverview({
@@ -138,8 +138,10 @@ export function ReviewOverview({
   // Priority Chart data
   const priorityChartData = useMemo(() => {
     return state.priorities.map((p) => {
-      const planned = weekSummary.plannedHoursByPriority[p.id] ?? 0;
-      const actual = weekSummary.hoursByPriority[p.id] ?? 0;
+      const planned =
+        Math.round((weekSummary.plannedHoursByPriority[p.id] ?? 0) * 10) / 10;
+      const actual =
+        Math.round((weekSummary.hoursByPriority[p.id] ?? 0) * 10) / 10;
       return {
         name: `#${p.id} ${p.name.split(" ")[0]}`,
         fullName: p.name,
@@ -152,9 +154,9 @@ export function ReviewOverview({
 
   // Priority 2 Workstream Split data
   const p2WorkstreamData = useMemo(() => {
-    const a = weekSummary.p2HoursWorkstreamA;
-    const b = weekSummary.p2HoursWorkstreamB;
-    const total = a + b;
+    const a = Math.round(weekSummary.p2HoursWorkstreamA * 10) / 10;
+    const b = Math.round(weekSummary.p2HoursWorkstreamB * 10) / 10;
+    const total = Math.round((a + b) * 10) / 10;
     return [
       {
         name: "A · Cashflow / Trading",
@@ -344,10 +346,10 @@ export function ReviewOverview({
         {/* Compounding & Strategy Card */}
         <Glass className="p-5 flex flex-col justify-between group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-violet">
+            <span className="text-xs font-semibold uppercase tracking-wider text-cyan">
               Strategic Velocity
             </span>
-            <Badge className="border-violet/30 text-violet bg-violet/10">
+            <Badge className="border-cyan/30 text-cyan bg-cyan/10">
               {monthRange.id}
             </Badge>
           </div>
@@ -507,9 +509,9 @@ export function ReviewOverview({
               <span className="font-semibold">Priorities</span>
               <Layers className="h-3.5 w-3.5" />
             </div>
-            <div className="font-display text-lg font-bold text-violet mt-1">
-              {weekSummary.p2HoursWorkstreamA}h /{" "}
-              {weekSummary.p2HoursWorkstreamB}h
+            <div className="font-display text-lg font-bold text-foreground mt-1">
+              {Math.round(weekSummary.p2HoursWorkstreamA * 10) / 10}h /{" "}
+              {Math.round(weekSummary.p2HoursWorkstreamB * 10) / 10}h
             </div>
             <div className="text-[10px] text-muted-foreground">
               P2 Trading / Fintech
@@ -570,7 +572,7 @@ export function ReviewOverview({
                   <span className="h-2 w-2 rounded-full bg-primary" /> Planned
                 </span>
                 <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="h-2 w-2 rounded-full bg-violet" /> Actual
+                  <span className="h-2 w-2 rounded-full bg-cyan" /> Actual
                 </span>
               </div>
               <div className="flex items-center bg-secondary/40 p-0.5 rounded-lg border border-glass-border">
@@ -644,7 +646,7 @@ export function ReviewOverview({
                   />
                   <Bar
                     dataKey="Actual"
-                    fill="var(--violet)"
+                    fill="var(--cyan)"
                     radius={[6, 6, 0, 0]}
                     barSize={26}
                   />
@@ -674,10 +676,10 @@ export function ReviewOverview({
                         key={`cell-${entry.id}`}
                         fill={
                           entry.id === 1
-                            ? "var(--p1)"
+                            ? "var(--cyan)"
                             : entry.id === 2
-                              ? "var(--p2)"
-                              : "var(--p3)"
+                              ? "var(--primary)"
+                              : "oklch(0.55 0.1 245)"
                         }
                       />
                     ))}
@@ -804,7 +806,10 @@ export function ReviewOverview({
                     className="flex items-center justify-between rounded-xl border border-glass-border bg-secondary/30 p-3 text-xs"
                   >
                     <div className="flex items-center gap-2.5">
-                      <PriorityIcon id={item.priorityId} className="h-6 w-6" />
+                      <PriorityIcon
+                        id={item.priorityId}
+                        className="h-6 w-6 shrink-0 border-glass-border/80 bg-secondary/40 text-foreground"
+                      />
                       <span className="font-medium text-foreground">
                         {item.title}
                       </span>

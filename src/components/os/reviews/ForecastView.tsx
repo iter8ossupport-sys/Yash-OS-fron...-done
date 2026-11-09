@@ -176,7 +176,10 @@ export function ForecastView() {
                     : "border-glass-border bg-secondary/30 hover:bg-secondary/50",
                 )}
               >
-                <PriorityIcon id={p.id} className="h-7 w-7" />
+                <PriorityIcon
+                  id={p.id}
+                  className="h-7 w-7 shrink-0 border-glass-border/80 bg-secondary/40 text-foreground"
+                />
                 <span className="font-semibold text-xs text-foreground">
                   #{p.id} {p.name.split(" ")[0]}
                 </span>

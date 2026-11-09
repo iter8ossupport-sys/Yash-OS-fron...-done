@@ -104,14 +104,14 @@ function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
           <div className="relative">
             <div className="text-2xl font-light md:text-3xl">{greeting()}</div>
-            <div className="font-display text-5xl font-bold md:text-6xl">
-              {state.userName}.
+            <div className="font-sans text-5xl font-bold tracking-tight text-foreground md:text-6xl">
+              {state.userName}
             </div>
-            <p className="mt-2 text-muted-foreground">
-              Reality over assumptions. Progress through execution.
-            </p>
-            <p className="mt-6 text-sm font-medium text-foreground/90 md:text-base">
-              Find human friction. Solve problems. Build systems. Scale impact.
+            <p className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm font-medium text-foreground/90 md:text-base">
+              <span>Find human friction</span>
+              <span>Solve problems</span>
+              <span>Build systems</span>
+              <span>Scale impact</span>
             </p>
 
             <div className="glass mt-8 max-w-xl rounded-3xl p-6">

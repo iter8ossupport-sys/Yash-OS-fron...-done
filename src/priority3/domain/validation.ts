@@ -82,8 +82,11 @@ export function validateLearningSession(
   return { valid: errors.length === 0, errors };
 }
 
+export type KnowledgeUnitValidationMode = "capture" | "complete";
+
 export function validateKnowledgeUnit(
   ku: Partial<KnowledgeUnitEntity>,
+  mode: KnowledgeUnitValidationMode = "capture",
 ): ValidationResult {
   const errors: string[] = [];
 
@@ -100,19 +103,28 @@ export function validateKnowledgeUnit(
     errors.push(`Invalid classification: '${ku.classification}'.`);
   }
 
-  // Mandatory 6 sections check
-  if (!ku.identity) errors.push("Section 1 (Identity) is missing.");
-  if (!ku.coreUnderstanding)
-    errors.push("Section 2 (Core Understanding) is missing.");
-  if (!ku.deeperUnderstanding)
-    errors.push("Section 3 (Deeper Understanding) is missing.");
-  if (!ku.sourcesAndEvidence)
-    errors.push("Section 4 (Sources & Evidence) is missing.");
-  if (!ku.relationshipsAndApplications) {
-    errors.push("Section 5 (Relationships & Applications) is missing.");
+  // Progressive enrichment validation:
+  // In "capture" mode, sections are permitted to be empty defaults.
+  // In "complete" mode (e.g. before validating maturity), we check for substantive depth.
+  if (mode === "complete") {
+    if (
+      !ku.coreUnderstanding ||
+      !ku.coreUnderstanding.plainEnglishExplanation.trim()
+    ) {
+      errors.push(
+        "Core Understanding plain-English explanation is required for complete validation.",
+      );
+    }
+    if (
+      !ku.sourcesAndEvidence ||
+      (ku.sourcesAndEvidence.sourceIds.length === 0 &&
+        ku.sourcesAndEvidence.evidenceIds.length === 0)
+    ) {
+      errors.push(
+        "At least one Source or Evidence record is required for complete validation.",
+      );
+    }
   }
-  if (!ku.developmentHistory)
-    errors.push("Section 6 (Development History) is missing.");
 
   return { valid: errors.length === 0, errors };
 }

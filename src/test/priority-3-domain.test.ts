@@ -12,6 +12,7 @@ import {
   canDevelopKnowledgeUnit,
   canTransitionQuestionStatus,
   canTransitionSessionStatus,
+  createInitialKnowledgeUnit,
   DATA_CLASSIFICATIONS,
   FOUNDATION_IDS,
   KNOWLEDGE_DEVELOPMENT_STATUSES,
@@ -224,16 +225,26 @@ describe("Priority 3: Domain Foundation (Phase 1)", () => {
       updatedAt: "2026-11-16T11:00:00Z",
     };
 
-    it("requires all 6 canonical sections in KnowledgeUnit validation", () => {
-      const res = validateKnowledgeUnit(baseUnit);
-      expect(res.valid).toBe(true);
-
-      const missingIdentity = { ...baseUnit, identity: undefined };
-      const failRes = validateKnowledgeUnit(
-        missingIdentity as unknown as Partial<KnowledgeUnitEntity>,
+    it("supports progressive enrichment from minimal capture to complete validation", () => {
+      // 1. Initial Quick Capture
+      const captured = createInitialKnowledgeUnit({
+        id: "ku-quick-cap",
+        title: "Heuristic Drift in High-Volatility Execution",
+        summary: "Execution rules decay when under drawdowns.",
+      });
+      const captureVal = validateKnowledgeUnit(captured, "capture");
+      expect(captureVal.valid).toBe(true);
+      expect(captured.identity.title).toBe(
+        "Heuristic Drift in High-Volatility Execution",
       );
-      expect(failRes.valid).toBe(false);
-      expect(failRes.errors).toContain("Section 1 (Identity) is missing.");
+      expect(captured.deeperUnderstanding.boundaryConditions).toBe(""); // Safe empty initial state
+
+      // 2. Complete Validation Check
+      const completeVal = validateKnowledgeUnit(captured, "complete");
+      expect(completeVal.valid).toBe(false);
+      expect(completeVal.errors).toContain(
+        "At least one Source or Evidence record is required for complete validation.",
+      );
     });
 
     it("restricts development to 'validated' unless verified evidence or application exists", () => {

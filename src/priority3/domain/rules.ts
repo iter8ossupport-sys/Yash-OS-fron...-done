@@ -6,8 +6,10 @@
  */
 
 import type {
+  DataClassificationLevel,
   FoundationId,
   KnowledgeDevelopmentStatus,
+  KnowledgePerspective,
   QuestionStatus,
   RelationshipType,
   SessionStatus,
@@ -243,4 +245,85 @@ export function canCreateKnowledgeRelationship(
     };
   }
   return { valid: true };
+}
+
+/**
+ * Factory for creating a progressively enrichable Knowledge Unit.
+ * Initializes all 6 sections with safe, clean default structures so the entity
+ * is immediately valid and renderable without forcing the user to complete
+ * every section during initial capture.
+ */
+export function createInitialKnowledgeUnit(params: {
+  id: string;
+  title: string;
+  summary?: string;
+  perspective?: KnowledgePerspective;
+  status?: KnowledgeDevelopmentStatus;
+  classification?: DataClassificationLevel;
+  foundationId?: FoundationId;
+  domainId?: string;
+  subjectId?: string;
+  topicId?: string;
+  tags?: string[];
+  plainEnglishExplanation?: string;
+  corePrinciples?: string[];
+  mentalModels?: string[];
+  now?: string;
+}): KnowledgeUnitEntity {
+  const now = params.now ?? new Date().toISOString();
+  const perspective = params.perspective ?? "personal_understanding";
+  const status = params.status ?? "captured";
+  const classification = params.classification ?? "general";
+  const summary = params.summary ?? "";
+  const plainEnglish = params.plainEnglishExplanation ?? summary;
+
+  return {
+    id: params.id,
+    title: params.title.trim(),
+    summary,
+    perspective,
+    status,
+    classification,
+    foundationId: params.foundationId,
+    domainId: params.domainId,
+    subjectId: params.subjectId,
+    topicId: params.topicId,
+    identity: {
+      id: params.id,
+      title: params.title.trim(),
+      perspective,
+      classification,
+      tags: params.tags ?? [],
+      foundationId: params.foundationId,
+      domainId: params.domainId,
+      subjectId: params.subjectId,
+      topicId: params.topicId,
+    },
+    coreUnderstanding: {
+      plainEnglishExplanation: plainEnglish,
+      corePrinciples: params.corePrinciples ?? [],
+      mentalModels: params.mentalModels ?? [],
+    },
+    deeperUnderstanding: {
+      nuancedMechanisms: "",
+      boundaryConditions: "",
+      counterExamples: [],
+    },
+    sourcesAndEvidence: {
+      sourceIds: [],
+      evidenceIds: [],
+      competingTheories: [],
+    },
+    relationshipsAndApplications: {
+      relationshipIds: [],
+      applicationRecordIds: [],
+      operationalNotes: undefined,
+    },
+    developmentHistory: {
+      revisions: [],
+    },
+    isArchived: false,
+    createdAt: now,
+    updatedAt: now,
+  };
 }

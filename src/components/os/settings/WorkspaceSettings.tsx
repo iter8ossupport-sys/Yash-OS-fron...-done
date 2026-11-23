@@ -1,227 +1,216 @@
-import { Compass, Target } from "lucide-react";
-import { useOS } from "@/lib/os/store";
-import type { Priority } from "@/lib/os/types";
-import { setActiveProject, saveProject } from "@/lib/os/logic";
+import { useEffect, useState } from "react";
+import { Compass } from "lucide-react";
+import { toast } from "sonner";
 import {
-  Button,
-  Input,
-  Label,
-  PriorityIcon,
-  Select,
-  Textarea,
-} from "@/components/os/ui";
+  applyWorkspaceUpdate,
+  selectWorkspaceSettings,
+} from "@/lib/os/settings";
+import { useOS } from "@/lib/os/store";
+import type { ReviewSettings } from "@/lib/os/types";
+import { Button, Input, Label, Select, Textarea } from "@/components/os/ui";
 import { SettingsSectionHeader } from "./SettingsSectionHeader";
 
-export function WorkspaceSettings() {
-  const { state, update, setGoalsOpen } = useOS();
+const REVIEW_PERIOD_OPTIONS: Array<{
+  value: ReviewSettings["defaultPeriod"];
+  label: string;
+}> = [
+  { value: "daily", label: "Overview / Daily Default" },
+  { value: "weekly", label: "Weekly Review" },
+  { value: "monthly", label: "Monthly Review" },
+  { value: "history", label: "Historical Records" },
+];
 
-  const f = state.foundation;
-  const setF = (patch: Partial<typeof f>) =>
-    update((s) => ({ ...s, foundation: { ...s.foundation, ...patch } }));
-  const setP = (id: number, patch: Partial<Priority>) =>
-    update((s) => ({
-      ...s,
-      priorities: s.priorities.map((p) =>
-        p.id === id ? { ...p, ...patch } : p,
-      ),
-    }));
+export function WorkspaceSettings() {
+  const { state, update } = useOS();
+  const current = selectWorkspaceSettings(state);
+  const phasesKey = current.foundation.phases.join("\0");
+
+  const [northStar, setNorthStar] = useState(current.foundation.northStar);
+  const [northStarLong, setNorthStarLong] = useState(
+    current.foundation.northStarLong,
+  );
+  const [mission, setMission] = useState(current.foundation.mission);
+  const [trajectory, setTrajectory] = useState(current.foundation.trajectory);
+  const [phases, setPhases] = useState<string[]>(current.foundation.phases);
+  const [defaultPeriod, setDefaultPeriod] = useState<
+    ReviewSettings["defaultPeriod"]
+  >(current.defaultReviewPeriod);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNorthStar(current.foundation.northStar);
+    setNorthStarLong(current.foundation.northStarLong);
+    setMission(current.foundation.mission);
+    setTrajectory(current.foundation.trajectory);
+    setPhases(phasesKey ? phasesKey.split("\0") : []);
+    setDefaultPeriod(current.defaultReviewPeriod);
+    setError(null);
+  }, [
+    current.foundation.northStar,
+    current.foundation.northStarLong,
+    current.foundation.mission,
+    current.foundation.trajectory,
+    phasesKey,
+    current.defaultReviewPeriod,
+  ]);
+
+  const isDirty =
+    northStar !== current.foundation.northStar ||
+    northStarLong !== current.foundation.northStarLong ||
+    mission !== current.foundation.mission ||
+    trajectory !== current.foundation.trajectory ||
+    defaultPeriod !== current.defaultReviewPeriod ||
+    phases.some((ph, idx) => ph !== current.foundation.phases[idx]);
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    const check = applyWorkspaceUpdate(state, {
+      foundation: {
+        northStar,
+        northStarLong,
+        mission,
+        trajectory,
+        phases,
+      },
+      defaultReviewPeriod: defaultPeriod,
+    });
+    if (!check.ok) {
+      setError(check.error);
+      toast.error(check.error);
+      return;
+    }
+    setError(null);
+    update((s) => {
+      const next = applyWorkspaceUpdate(s, {
+        foundation: {
+          northStar,
+          northStarLong,
+          mission,
+          trajectory,
+          phases,
+        },
+        defaultReviewPeriod: defaultPeriod,
+      });
+      return next.ok ? next.state : s;
+    });
+    toast.success("Workspace preferences saved");
+  };
 
   return (
-    <div className="space-y-6">
+    <form onSubmit={handleSave} className="space-y-6">
       <SettingsSectionHeader
-        title="Workspace"
-        description="Foundation principles, strategic phases, permanent priorities, and long-term milestones."
+        title="Workspace Preferences"
+        description="Configure foundational direction defaults and your landing review view."
         icon={Compass}
       />
 
-      {/* Strategic Foundation */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-cyan">
-          Operating Foundation
-        </h3>
-
         <div>
-          <Label>North Star (Concise Vision)</Label>
+          <Label htmlFor="ws-north-star">North Star (Concise Vision)</Label>
           <Input
-            value={f.northStar}
-            onChange={(e) => setF({ northStar: e.target.value })}
+            id="ws-north-star"
+            value={northStar}
+            onChange={(e) => {
+              setNorthStar(e.target.value);
+              if (error) setError(null);
+            }}
             placeholder="e.g. Build systems that remove human friction."
+            maxLength={200}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Displayed in the global sidebar, Home hero card, and Goals overview.
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="ws-north-star-long">
+            North Star (Full Vision Narrative)
+          </Label>
+          <Textarea
+            id="ws-north-star-long"
+            rows={2}
+            value={northStarLong}
+            onChange={(e) => setNorthStarLong(e.target.value)}
+            placeholder="Full narrative articulating your long-term ambition."
+            maxLength={600}
           />
         </div>
 
         <div>
-          <Label>North Star (Full Vision Narrative)</Label>
+          <Label htmlFor="ws-mission">Mission</Label>
           <Textarea
+            id="ws-mission"
             rows={2}
-            value={f.northStarLong}
-            onChange={(e) => setF({ northStarLong: e.target.value })}
-            placeholder="Full narrative articulating your ultimate long-term ambition."
-          />
-        </div>
-
-        <div>
-          <Label>Mission</Label>
-          <Textarea
-            rows={2}
-            value={f.mission}
-            onChange={(e) => setF({ mission: e.target.value })}
+            value={mission}
+            onChange={(e) => setMission(e.target.value)}
             placeholder="Your current operating mission."
+            maxLength={600}
           />
         </div>
 
         <div>
-          <Label>Founder Trajectory</Label>
+          <Label htmlFor="ws-trajectory">Founder Trajectory</Label>
           <Input
-            value={f.trajectory}
-            onChange={(e) => setF({ trajectory: e.target.value })}
-            placeholder="e.g. Operator → Builder → Founder → Infrastructure company ($1T long-term ambition)."
+            id="ws-trajectory"
+            value={trajectory}
+            onChange={(e) => setTrajectory(e.target.value)}
+            placeholder="e.g. Operator → Builder → Founder → Infrastructure company."
+            maxLength={600}
           />
         </div>
 
         <div>
-          <Label>Four Strategic Phases</Label>
+          <Label>Strategic Phases</Label>
           <div className="grid gap-2 sm:grid-cols-2">
-            {f.phases.map((ph, i) => (
+            {phases.map((ph, idx) => (
               <Input
-                key={i}
+                key={idx}
+                aria-label={`Strategic phase ${idx + 1}`}
                 value={ph}
                 onChange={(e) =>
-                  setF({
-                    phases: f.phases.map((x, j) =>
-                      j === i ? e.target.value : x,
-                    ),
-                  })
+                  setPhases((prev) =>
+                    prev.map((item, j) => (j === idx ? e.target.value : item)),
+                  )
                 }
               />
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Long-Term Goals */}
-      <div className="rounded-2xl border border-glass-border/60 bg-secondary/30 p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="text-sm font-semibold">Goals & Milestones</div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Level A: {state.goals.levelA.approved ? "Approved" : "Proposed"} ·
-              Level B: {state.goals.levelB.approved ? "Approved" : "Proposed"} ·
-              Level C: 3 priority milestones
-            </p>
-          </div>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setGoalsOpen(true)}
-            className="shrink-0"
-          >
-            <Target className="h-4 w-4" />
-            Edit Goals & Milestones
-          </Button>
+        <div className="pt-2">
+          <Label>Default Reviews Landing View</Label>
+          <Select
+            value={defaultPeriod}
+            onChange={(v) =>
+              setDefaultPeriod(v as ReviewSettings["defaultPeriod"])
+            }
+            options={REVIEW_PERIOD_OPTIONS}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Selects which Reviews view opens by default when visiting Reviews
+            without a specific tab parameter.
+          </p>
         </div>
       </div>
 
-      {/* Three Permanent Priorities */}
-      <div className="space-y-4 pt-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-cyan">
-          Three Permanent Priorities
-        </h3>
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
 
-        <div className="space-y-3">
-          {state.priorities.map((p) => {
-            const priorityProjects = state.projects.filter(
-              (x) => x.priorityId === p.id,
-            );
-            const activeProject = state.projects.find(
-              (x) => x.id === p.activeProjectId,
-            );
-
-            return (
-              <div
-                key={p.id}
-                className="space-y-3 rounded-2xl bg-secondary/40 p-4"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <PriorityIcon id={p.id} className="h-8 w-8" />
-                    <b className="text-sm">
-                      #{p.id} {p.name}
-                    </b>
-                  </div>
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {p.status}
-                  </span>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label>Active Project</Label>
-                    <Select
-                      value={p.activeProjectId ?? ""}
-                      onChange={(v) =>
-                        update((s) => setActiveProject(s, p.id, v || null))
-                      }
-                      options={[
-                        { value: "", label: "None (no active project)" },
-                        ...priorityProjects.map((x) => ({
-                          value: x.id,
-                          label: x.name,
-                        })),
-                      ]}
-                    />
-                  </div>
-                  <div>
-                    <Label>Current Milestone</Label>
-                    <Input
-                      value={p.milestone}
-                      placeholder="e.g. Next tangible deliverable"
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (activeProject) {
-                          update((s) =>
-                            saveProject(s, {
-                              ...activeProject,
-                              milestone: val,
-                            }),
-                          );
-                        } else {
-                          setP(p.id, { milestone: val });
-                        }
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <Label>Main Bottleneck</Label>
-                    <Input
-                      value={p.bottleneck}
-                      placeholder="e.g. Current execution blocker"
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (activeProject) {
-                          update((s) =>
-                            saveProject(s, {
-                              ...activeProject,
-                              bottlenecks: val,
-                            }),
-                          );
-                        } else {
-                          setP(p.id, { bottleneck: val });
-                        }
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <Label>Assigned Project Count</Label>
-                    <div className="flex h-10 items-center rounded-xl border border-input bg-secondary/30 px-3 text-xs text-muted-foreground">
-                      {priorityProjects.length} project(s) assigned
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      <div className="rounded-xl border border-glass-border bg-secondary/20 p-3.5 text-xs text-muted-foreground">
+        Priority active projects, milestones, and goals are operational records
+        managed directly in{" "}
+        <strong className="text-foreground">Projects</strong> and the{" "}
+        <strong className="text-foreground">Goals & Milestones</strong> panel.
       </div>
-    </div>
+
+      <div className="flex justify-end">
+        <Button type="submit" variant="primary" disabled={!isDirty && !error}>
+          Save Workspace Preferences
+        </Button>
+      </div>
+    </form>
   );
 }

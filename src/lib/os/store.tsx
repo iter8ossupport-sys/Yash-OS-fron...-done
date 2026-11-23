@@ -3,7 +3,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -26,24 +25,32 @@ export function OSProvider({ children }: { children: ReactNode }) {
     syncPrioritiesWithProjects(migrateOSState(initialState)),
   );
   const [goalsOpen, setGoalsOpen] = useState(false);
-  const loaded = useRef(false);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        setState(migrateOSState(parsed));
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          setState(syncPrioritiesWithProjects(migrateOSState(parsed)));
+        }
       }
     } catch {
-      /* ignore */
+      /* ignore corrupt or inaccessible stored payload */
+    } finally {
+      setHydrated(true);
     }
-    loaded.current = true;
   }, []);
 
   useEffect(() => {
-    if (loaded.current) localStorage.setItem(KEY, JSON.stringify(state));
-  }, [state]);
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch {
+      /* ignore QuotaExceededError or disabled storage */
+    }
+  }, [state, hydrated]);
 
   useEffect(() => {
     const apply = () => {

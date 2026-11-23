@@ -11,6 +11,7 @@ import {
 import hero from "@/assets/hero-space.jpg";
 import orb from "@/assets/orb.png";
 import { useOS, fmtMin } from "@/lib/os/store";
+import { getHourInTimeZone } from "@/lib/os/settings";
 import { selectedTasks, plannedMinutes } from "@/lib/os/logic";
 import {
   Button,
@@ -39,8 +40,8 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-function greeting() {
-  const h = new Date().getHours();
+function greeting(timeZone?: string) {
+  const h = getHourInTimeZone(new Date(), timeZone);
   return h < 12
     ? "Good Morning,"
     : h < 18
@@ -103,7 +104,9 @@ function HomePage() {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
           <div className="relative">
-            <div className="text-2xl font-light md:text-3xl">{greeting()}</div>
+            <div className="text-2xl font-light md:text-3xl">
+              {greeting(state.prefs.timeZone)}
+            </div>
             <div className="font-sans text-5xl font-bold tracking-tight text-foreground md:text-6xl">
               {state.userName}
             </div>

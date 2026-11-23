@@ -245,4 +245,117 @@ describe("Phase 3: Schema v5 Migration & Priority 2 Infrastructure Tests", () =>
       initial.tradingOperation?.operatingProfile.version,
     );
   });
+
+  it("5. DEF-001 Regression: preserves user-created Priority 3 projects across v3/v4/v5 migrations and browser reloads while stripping legacy demo-skills", () => {
+    const userP3ProjectA: Project = {
+      id: "p3-mechanics-e2e",
+      name: "Mechanics Study E2E",
+      objective:
+        "Human Understanding: Biology, neuroscience, psychology, behavior, communication and social dynamics.",
+      priorityId: 3,
+      status: "active",
+      hypothesis: "Feedback loops govern behavioral stability",
+      milestone: "Synthesize 3 core control models",
+      metrics: "3 KUs validated",
+      bottlenecks: "",
+      evidence: "",
+      decisions: "",
+      learning: "",
+      documents: "",
+      createdAt: "2026-11-22",
+      learningFoundation: "human_understanding",
+      learningCategories: ["human_understanding"],
+      docs: [],
+    };
+
+    const userP3ProjectB: Project = {
+      id: "p3-reality-e2e",
+      name: "Quantum AI Systems",
+      objective:
+        "Reality Understanding: Physics, mathematics, logic, engineering, computing, software, hardware and AI.",
+      priorityId: 3,
+      status: "paused",
+      hypothesis: "",
+      milestone: "",
+      metrics: "",
+      bottlenecks: "",
+      evidence: "",
+      decisions: "",
+      learning: "",
+      documents: "",
+      createdAt: "2026-11-22",
+      learningFoundation: "reality_understanding",
+      learningCategories: ["reality_understanding"],
+      docs: [],
+    };
+
+    const legacyDemoSkills: Project = {
+      id: "demo-skills",
+      name: "Product + Trading Skills",
+      objective: "Legacy placeholder project",
+      priorityId: 3,
+      status: "active",
+      hypothesis: "",
+      milestone: "",
+      metrics: "",
+      bottlenecks: "",
+      evidence: "",
+      decisions: "",
+      learning: "",
+      documents: "",
+      createdAt: "2026-10-01",
+      docs: [],
+    };
+
+    const stateBeforeReload: Partial<OSState> = {
+      ...migrateOSState({}),
+      projects: [
+        ...migrateOSState({}).projects,
+        legacyDemoSkills,
+        userP3ProjectA,
+        userP3ProjectB,
+      ],
+    };
+
+    // Simulate first reload migration pass
+    const afterReload1 = migrateOSState(
+      JSON.parse(JSON.stringify(stateBeforeReload)),
+    );
+    expect(afterReload1.projects.some((p) => p.id === "demo-skills")).toBe(
+      false,
+    );
+
+    const p3ProjectsAfter1 = afterReload1.projects.filter(
+      (p) => p.priorityId === 3,
+    );
+    expect(p3ProjectsAfter1).toHaveLength(2);
+    expect(p3ProjectsAfter1.map((p) => p.id)).toEqual([
+      "p3-mechanics-e2e",
+      "p3-reality-e2e",
+    ]);
+    expect(p3ProjectsAfter1[0]?.learningFoundation).toBe("human_understanding");
+    expect(p3ProjectsAfter1[1]?.learningFoundation).toBe(
+      "reality_understanding",
+    );
+
+    // Simulate subsequent reload and persistence passes
+    const afterReload2 = migrateOSState(
+      JSON.parse(JSON.stringify(afterReload1)),
+    );
+    const p3ProjectsAfter2 = afterReload2.projects.filter(
+      (p) => p.priorityId === 3,
+    );
+    expect(p3ProjectsAfter2).toHaveLength(2);
+    expect(p3ProjectsAfter2[0]?.name).toBe("Mechanics Study E2E");
+    expect(p3ProjectsAfter2[1]?.name).toBe("Quantum AI Systems");
+
+    // Priority 3 active project syncs cleanly with user P3 project
+    const p3Priority = afterReload2.priorities.find((pr) => pr.id === 3);
+    expect(p3Priority?.activeProjectId).toBe("p3-mechanics-e2e");
+    expect(p3Priority?.project).toBe("Mechanics Study E2E");
+
+    for (const p3Proj of p3ProjectsAfter2) {
+      expect(validateProject(p3Proj).success).toBe(true);
+    }
+  });
 });

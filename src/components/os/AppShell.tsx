@@ -14,6 +14,7 @@ import {
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useOS } from "@/lib/os/store";
+import { formatDateInTimeZone } from "@/lib/os/settings";
 import orb from "@/assets/orb.png";
 import { Button } from "./ui";
 import { GoalsPanel } from "./GoalsPanel";
@@ -32,13 +33,13 @@ export const NAV = [
 export function AppShell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { state, update, setGoalsOpen } = useOS();
-  const isDark = state.theme !== "light";
-  const date = new Date().toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  const systemDark =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const isDark =
+    state.theme === "dark" || (state.theme === "system" && systemDark);
+  const date = formatDateInTimeZone(new Date(), state.prefs.timeZone);
 
   return (
     <div className="relative min-h-screen w-full bg-background overflow-x-hidden">

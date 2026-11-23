@@ -93,8 +93,12 @@ export function upgradeProjectToV3(project: Project): Project {
     project.lifecyclePhase ??
     (project.status === "active" ? "build_delivery" : "idea_discovery");
 
-  // 2. Project Goal (exactly 1 active)
-  let goalsHistory = project.goalsHistory ? [...project.goalsHistory] : [];
+  // 2. Project Goal (up to 1 active; preserve resolved goals without re-activating them)
+  const sourceGoals =
+    project.goals && project.goals.length > 0
+      ? project.goals
+      : (project.goalsHistory ?? []);
+  let goalsHistory = sourceGoals.map((g) => ({ ...g }));
   let activeGoalId = project.activeGoalId;
 
   if (goalsHistory.length === 0) {
@@ -118,8 +122,18 @@ export function upgradeProjectToV3(project: Project): Project {
     if (active) {
       activeGoalId = active.id;
     } else {
-      goalsHistory[0]!.status = "active";
-      activeGoalId = goalsHistory[0]!.id;
+      const allResolved = goalsHistory.every(
+        (g) =>
+          g.status === "achieved" ||
+          g.status === "superseded" ||
+          g.status === "abandoned",
+      );
+      if (!allResolved) {
+        goalsHistory[0] = { ...goalsHistory[0]!, status: "active" };
+        activeGoalId = goalsHistory[0]!.id;
+      } else {
+        activeGoalId = undefined;
+      }
     }
   }
 
@@ -349,6 +363,7 @@ export function upgradeProjectToV3(project: Project): Project {
     ...project,
     lifecyclePhase,
     activeGoalId,
+    goals: goalsHistory,
     goalsHistory,
     milestones,
     docs: migratedDocs,
@@ -578,16 +593,19 @@ export function migrateOSStateV3(raw: unknown): OSState {
   const legacyLbes = rawProjects.find(
     (x) => x.id === "demo-lbes" || x.name.toLowerCase() === "lbes",
   );
-  const legacySkills = rawProjects.find(
-    (x) => x.id === "demo-skills" || x.priorityId === 3,
-  );
+  const isLegacyDemoSkillsProject = (x: Project) =>
+    x.id === "demo-skills" ||
+    (typeof x.name === "string" &&
+      x.name.trim().toLowerCase() === "product + trading skills");
+  const legacySkills = rawProjects.find(isLegacyDemoSkillsProject);
 
-  // Filter out demo-lbes and demo-skills from project portfolio in v3
+  // Filter out demo-lbes and demo-skills from project portfolio in v3,
+  // while strictly preserving all user-created Priority 3 projects.
   const filteredProjects = rawProjects.filter(
-    (x) => x.id !== legacyLbes?.id && x.id !== legacySkills?.id,
+    (x) => x.id !== legacyLbes?.id && !isLegacyDemoSkillsProject(x),
   );
 
-  // Upgrade remaining projects (Priority 1 and Priority 2B)
+  // Upgrade remaining projects (Priority 1, Priority 2B, and user-created Priority 3)
   const upgradedProjects = filteredProjects.map(upgradeProjectToV3);
 
   // 3. Migrate or preserve TradingOperation (Priority 2A)
@@ -611,7 +629,10 @@ export function migrateOSStateV3(raw: unknown): OSState {
       : undefined;
 
   if (!learningSystem) {
-    learningSystem = migrateSkillsToLearningSystem(legacySkills, rawKnowledge);
+    learningSystem = migrateSkillsToLearningSystem(
+      legacySkills ?? rawProjects.find((x) => x.priorityId === 3),
+      rawKnowledge,
+    );
   }
 
   // 5. Backfill tasks with projectId and milestoneId

@@ -124,6 +124,8 @@ export interface OSState {
     defaultView: string;
     dayTypeHours: Record<DayType, number>;
     constraints: string;
+    defaultDayType?: DayType | undefined;
+    timeZone?: string | undefined;
   };
 
   // Reviews Data Foundation additions

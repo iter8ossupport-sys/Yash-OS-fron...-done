@@ -21,6 +21,7 @@ import {
 import { Badge, Button, Glass, PriorityIcon } from "@/components/os/ui";
 import type { PriorityId, Project, TradingOperation } from "@/lib/os/types";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { PRIORITIES_META } from "./projectsMeta";
 
 export interface PortfolioHierarchyTreeProps {
@@ -47,10 +48,33 @@ export function PortfolioHierarchyTree({
   onOpenLearningWorkspace,
 }: PortfolioHierarchyTreeProps) {
   const p1Projects = projects.filter((p) => p.priorityId === 1);
+  const p2TradingProjects = projects.filter(
+    (p) => p.priorityId === 2 && p.workstream === "A",
+  );
   const p2FintechProjects = projects.filter(
     (p) => p.priorityId === 2 && p.workstream === "B",
   );
   const p3Projects = projects.filter((p) => p.priorityId === 3);
+
+  const handleBranchDrop = (
+    e: React.DragEvent<HTMLDivElement>,
+    targetPriorityId: PriorityId,
+  ) => {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData("application/x-yash-project");
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as {
+        id: string;
+        priorityId: PriorityId;
+      };
+      if (parsed.priorityId !== targetPriorityId) {
+        toast.error("Cannot move project across permanent priority branches.");
+      }
+    } catch {
+      // ignore invalid drag payload
+    }
+  };
 
   const activeP1Count = p1Projects.filter((p) => p.status === "active").length;
   const activeP2Count =
@@ -160,7 +184,11 @@ export function PortfolioHierarchyTree({
         {/* =========================================================
             BRANCH 1: PRIORITY 1 — FOUNDER CAPABILITY
         ========================================================= */}
-        <div className="flex min-w-0 flex-col gap-3">
+        <div
+          className="flex min-w-0 flex-col gap-3"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => handleBranchDrop(e, 1)}
+        >
           {/* Branch 1 Header Card */}
           <Glass className="relative border border-glass-border/80 p-4 shadow-md transition-all hover:border-glass-border hover:bg-secondary/20">
             <div className="flex items-start gap-3 border-b border-glass-border/60 pb-3">
@@ -236,7 +264,11 @@ export function PortfolioHierarchyTree({
         {/* =========================================================
             BRANCH 2: PRIORITY 2 — CASHFLOW INFRASTRUCTURE
         ========================================================= */}
-        <div className="flex min-w-0 flex-col gap-3">
+        <div
+          className="flex min-w-0 flex-col gap-3"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => handleBranchDrop(e, 2)}
+        >
           {/* Branch 2 Header Card */}
           <Glass className="relative border border-glass-border/80 p-4 shadow-md transition-all hover:border-glass-border hover:bg-secondary/20">
             <div className="flex items-start gap-3 border-b border-glass-border/60 pb-3">
@@ -375,6 +407,20 @@ export function PortfolioHierarchyTree({
                   Trading operation not initialized.
                 </div>
               )}
+
+              {p2TradingProjects.length > 0 && (
+                <div className="mt-3 flex flex-col gap-2.5 border-t border-glass-border/50 pt-3">
+                  {p2TradingProjects.map((project) => (
+                    <ProjectHierarchyCard
+                      key={project.id}
+                      project={project}
+                      onOpenDetails={() => onOpenProjectDetails(project.id)}
+                      accentColor="cyan"
+                      badgeText="Workstream A • Cashflow"
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* ─────────────────────────────────────────────────────
@@ -442,7 +488,11 @@ export function PortfolioHierarchyTree({
         {/* =========================================================
             BRANCH 3: PRIORITY 3 — LEARNING FOR EXECUTION
         ========================================================= */}
-        <div className="flex min-w-0 flex-col gap-3">
+        <div
+          className="flex min-w-0 flex-col gap-3"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => handleBranchDrop(e, 3)}
+        >
           {/* Branch 3 Header Card */}
           <Glass className="relative border border-glass-border/80 p-4 shadow-md transition-all hover:border-glass-border hover:bg-secondary/20">
             <div className="flex items-start gap-3 border-b border-glass-border/60 pb-3">
@@ -570,6 +620,17 @@ function ProjectHierarchyCard({
 
   return (
     <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData(
+          "application/x-yash-project",
+          JSON.stringify({
+            id: project.id,
+            priorityId: project.priorityId,
+            workstream: project.workstream,
+          }),
+        );
+      }}
       onClick={onOpenDetails}
       className={cn(
         "group cursor-pointer rounded-2xl border border-glass-border/80 bg-secondary/30 p-4 transition-all hover:border-glass-border hover:bg-secondary/45",

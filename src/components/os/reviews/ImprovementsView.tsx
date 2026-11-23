@@ -259,7 +259,7 @@ export function ImprovementsView() {
           <div className="text-xs text-muted-foreground">
             Proposed (Pending)
           </div>
-          <div className="font-display text-2xl font-bold mt-1 text-cyan">
+          <div className="font-display text-2xl font-bold mt-1 text-foreground">
             {stats.proposed}
           </div>
           <div className="text-[11px] text-muted-foreground mt-1">
@@ -268,7 +268,7 @@ export function ImprovementsView() {
         </div>
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
           <div className="text-xs text-muted-foreground">Approved / Active</div>
-          <div className="font-display text-2xl font-bold mt-1 text-primary">
+          <div className="font-display text-2xl font-bold mt-1 text-foreground">
             {stats.approved}
           </div>
           <div className="text-[11px] text-muted-foreground mt-1">
@@ -277,7 +277,7 @@ export function ImprovementsView() {
         </div>
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
           <div className="text-xs text-muted-foreground">Evaluated Actions</div>
-          <div className="font-display text-2xl font-bold mt-1 text-success">
+          <div className="font-display text-2xl font-bold mt-1 text-foreground">
             {stats.evaluated}
           </div>
           <div className="text-[11px] text-muted-foreground mt-1">
@@ -308,7 +308,7 @@ export function ImprovementsView() {
                 className={cn(
                   "px-3 py-1 rounded-md text-xs font-medium capitalize transition-all",
                   statusFilter === st
-                    ? "bg-primary text-primary-foreground glow"
+                    ? "bg-primary text-primary-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -363,18 +363,7 @@ export function ImprovementsView() {
                         <span className="font-semibold text-base text-foreground">
                           {imp.problemStatement}
                         </span>
-                        <Badge
-                          className={cn(
-                            "capitalize text-[11px]",
-                            isProposed
-                              ? "border-cyan/30 text-cyan bg-cyan/10"
-                              : isApproved
-                                ? "border-primary/30 text-primary bg-primary/10"
-                                : isEvaluated
-                                  ? "border-success/30 text-success bg-success/10"
-                                  : "text-muted-foreground",
-                          )}
-                        >
+                        <Badge className="capitalize text-[11px] border-glass-border bg-secondary/60 text-muted-foreground">
                           {imp.status}
                         </Badge>
                       </div>
@@ -425,7 +414,7 @@ export function ImprovementsView() {
                     )}
 
                     {imp.promotedToKnowledgeId && (
-                      <Badge className="border-cyan/30 text-cyan bg-cyan/10">
+                      <Badge className="border-glass-border bg-secondary/60 text-muted-foreground">
                         Promoted to Knowledge
                       </Badge>
                     )}
@@ -479,14 +468,7 @@ export function ImprovementsView() {
                         <span className="font-semibold text-foreground">
                           Evaluation Result:
                         </span>
-                        <Badge
-                          className={cn(
-                            "capitalize text-[11px]",
-                            imp.evaluationOutcome === "succeeded"
-                              ? "border-success/30 text-success bg-success/10"
-                              : "border-warning/30 text-warning bg-warning/10",
-                          )}
-                        >
+                        <Badge className="capitalize text-[11px] border-glass-border bg-secondary/60 text-muted-foreground">
                           {imp.evaluationOutcome.replace("_", " ")}
                         </Badge>
                         {imp.evaluationNotes && (

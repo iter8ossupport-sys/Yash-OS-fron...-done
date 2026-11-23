@@ -452,16 +452,29 @@ export function calculateProjectPerformance(
   );
 
   // 2. Gather outputs associated with this project
-  const outputs = history.flatMap((h) =>
-    (h.outputs ?? [])
-      .filter((o) => o.priorityId === project.priorityId)
+  const outputs = history.flatMap((h) => {
+    const dayProjectTasks = (h.taskSnapshots ?? []).filter(
+      (t) => t.projectId === project.id,
+    );
+    return (h.outputs ?? [])
+      .filter((o) => {
+        if (o.projectId) {
+          return o.projectId === project.id;
+        }
+        return (
+          o.priorityId === project.priorityId &&
+          dayProjectTasks.some(
+            (t) => t.title === o.title || dayProjectTasks.length > 0,
+          )
+        );
+      })
       .map((o) => ({
         date: h.date,
         title: o.title,
         text: o.text,
         workstream: o.workstream,
-      })),
-  );
+      }));
+  });
 
   const activeDates = Array.from(
     new Set(projectTasks.map((t) => t.date)),

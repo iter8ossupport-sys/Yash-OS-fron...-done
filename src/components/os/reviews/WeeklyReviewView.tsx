@@ -77,8 +77,13 @@ export function WeeklyReviewView({
   const [finalizeModalOpen, setFinalizeModalOpen] = useState(false);
   const [executiveSummary, setExecutiveSummary] = useState("");
 
-  // Determine ISO Week boundaries
-  const weekInfo = useMemo(() => getISOWeekRange(refDate), [refDate]);
+  const weekStartDay = state.reviewSettings?.weekStartDay ?? 1;
+
+  // Determine Week boundaries
+  const weekInfo = useMemo(
+    () => getISOWeekRange(refDate, weekStartDay),
+    [refDate, weekStartDay],
+  );
 
   // Aggregate period records
   const summary = useMemo(() => {
@@ -98,8 +103,8 @@ export function WeeklyReviewView({
     return d;
   }, [refDate]);
   const prevWeekInfo = useMemo(
-    () => getISOWeekRange(prevWeekDate),
-    [prevWeekDate],
+    () => getISOWeekRange(prevWeekDate, weekStartDay),
+    [prevWeekDate, weekStartDay],
   );
   const prevSummary = useMemo(() => {
     return calculatePeriodSummary(
@@ -236,15 +241,9 @@ export function WeeklyReviewView({
               <span className="text-xs text-muted-foreground font-normal">
                 ({weekInfo.startDate} to {weekInfo.endDate})
               </span>
-              {finalizedRecord ? (
-                <Badge className="border-success/30 text-success bg-success/10">
-                  Finalized Snapshot
-                </Badge>
-              ) : (
-                <Badge className="border-cyan/30 text-cyan bg-cyan/10">
-                  Active Period
-                </Badge>
-              )}
+              <Badge className="border-glass-border bg-secondary/60 text-muted-foreground">
+                {finalizedRecord ? "Finalized Snapshot" : "Active Period"}
+              </Badge>
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
               {summary.daysIncluded.length} of 7 days recorded ·{" "}
@@ -261,7 +260,16 @@ export function WeeklyReviewView({
             variant="ghost"
             size="sm"
             className="text-xs"
-            onClick={() => exportPeriodToCSV(summary, state.history)}
+            onClick={() =>
+              exportPeriodToCSV(summary, state.history, {
+                includeFinancials: Boolean(
+                  state.sharedReports?.[0]?.includeFinancials,
+                ),
+                includeAuditHistory: Boolean(
+                  state.sharedReports?.[0]?.includeAuditHistory,
+                ),
+              })
+            }
           >
             <Download className="h-3.5 w-3.5 mr-1" /> CSV
           </Button>
@@ -270,7 +278,31 @@ export function WeeklyReviewView({
             size="sm"
             className="text-xs"
             onClick={() =>
-              printReviewReport(summary, state.history, state.userName)
+              exportPeriodToJSON(summary, state.history, {
+                includeFinancials: Boolean(
+                  state.sharedReports?.[0]?.includeFinancials,
+                ),
+                includeAuditHistory: Boolean(
+                  state.sharedReports?.[0]?.includeAuditHistory,
+                ),
+              })
+            }
+          >
+            <FileText className="h-3.5 w-3.5 mr-1" /> JSON
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs"
+            onClick={() =>
+              printReviewReport(summary, state.history, state.userName, {
+                includeFinancials: Boolean(
+                  state.sharedReports?.[0]?.includeFinancials,
+                ),
+                includeAuditHistory: Boolean(
+                  state.sharedReports?.[0]?.includeAuditHistory,
+                ),
+              })
             }
           >
             <Printer className="h-3.5 w-3.5 mr-1" /> PDF / Print
@@ -632,14 +664,14 @@ export function WeeklyReviewView({
                     className="flex items-center justify-between rounded-xl border border-glass-border bg-secondary/30 p-3 text-xs"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-warning">
+                      <span className="font-semibold text-foreground">
                         #{t.priorityId}
                       </span>
                       <span className="font-medium text-foreground">
                         {t.title}
                       </span>
                     </div>
-                    <Badge className="border-warning/30 text-warning bg-warning/10">
+                    <Badge className="border-glass-border bg-secondary/60 text-muted-foreground">
                       Postponed {t.count}×
                     </Badge>
                   </div>
@@ -649,7 +681,7 @@ export function WeeklyReviewView({
           </div>
 
           <div className="rounded-2xl border border-glass-border bg-secondary/20 p-4">
-            <div className="text-xs font-semibold text-cyan uppercase tracking-wider mb-1">
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
               Top Operational Learnings ({summary.learningsSummary.length})
             </div>
             <ul className="space-y-1.5 text-xs text-muted-foreground mt-2 max-h-32 overflow-y-auto pr-1">

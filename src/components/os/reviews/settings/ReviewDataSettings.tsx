@@ -20,6 +20,7 @@ export function ReviewDataSettings({
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (evt) => {
+      e.target.value = "";
       try {
         const parsed = JSON.parse(
           evt.target?.result as string,

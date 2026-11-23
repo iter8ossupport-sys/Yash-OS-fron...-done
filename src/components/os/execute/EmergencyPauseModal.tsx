@@ -51,7 +51,15 @@ export function EmergencyPauseModal({
             </button>
           ))}
       </div>
-      <div className="mt-5 flex justify-end">
+      <div className="mt-5 flex justify-end gap-2">
+        {interrupted && (
+          <Button
+            variant="primary"
+            onClick={() => onSwitchTask(interrupted.id)}
+          >
+            Resume paused task
+          </Button>
+        )}
         <Button onClick={onClose}>Handle outside the plan</Button>
       </div>
     </Modal>

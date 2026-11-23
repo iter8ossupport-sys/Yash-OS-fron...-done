@@ -24,25 +24,33 @@ describe("execution rules", () => {
     expect(s.plan!.tasks.every((t) => t.status === "pending")).toBe(true);
   });
 
-  it("pause/resume accumulates time", () => {
+  it("pause/resume accumulates time and clears activeTaskId while paused (DEF-014)", () => {
     let s = approved();
     const id = s.plan!.tasks[0]!.id;
     s = startTask(s, id, 0);
+    expect(s.activeTaskId).toBe(id);
     s = pauseTask(s, id, 60000);
+    expect(s.activeTaskId).toBeNull();
     s = startTask(s, id, 100000);
+    expect(s.activeTaskId).toBe(id);
     expect(elapsed(s.plan!.tasks[0]!, 130000)).toBe(90000);
   });
 
-  it("emergency switch preserves interrupted task time", () => {
+  it("emergency switch preserves interrupted task time and clears stale interruptedTaskId when idle (DEF-014)", () => {
     let s = approved();
     const id = s.plan!.tasks[0]!.id;
     s = startTask(s, id, 0);
     s = emergencyPause(s, 30000);
     expect(s.interruptedTaskId).toBe(id);
+    expect(s.activeTaskId).toBeNull();
     expect(s.plan!.tasks[0]).toMatchObject({
       status: "paused",
       elapsedMs: 30000,
     });
+
+    // Triggering emergency switch again while no task is active clears stale interruptedTaskId
+    s = emergencyPause(s, 45000);
+    expect(s.interruptedTaskId).toBeNull();
   });
 
   it("finishing records output separately from outcome", () => {

@@ -53,7 +53,7 @@ import {
   Textarea,
 } from "@/components/os/ui";
 import { KnowledgeEditorModal } from "@/components/os/KnowledgeEditorModal";
-import { today, uid } from "@/lib/os/seed";
+import { newDraft, today, uid } from "@/lib/os/seed";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -219,7 +219,15 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
     }
     const unf = activeRecord.unfinished;
     update((s) => {
-      const currentTasks = s.plan?.tasks ?? [];
+      const defaultDayType = s.prefs.defaultDayType ?? "Non-College Day";
+      const basePlan =
+        s.plan ??
+        s.draft ??
+        newDraft({
+          dayType: defaultDayType,
+          hours: s.prefs.dayTypeHours[defaultDayType] ?? 8,
+        });
+      const currentTasks = basePlan.tasks ?? [];
       const newTasks: Task[] = unf.map((title, i) => ({
         id: `task-seed-${Date.now()}-${i}`,
         priorityId: ((i % 3) + 1) as PriorityId,
@@ -236,13 +244,10 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
         status: "pending" as const,
         elapsedMs: 0,
       }));
-      if (!s.plan) {
-        return s;
-      }
       return {
         ...s,
         plan: {
-          ...s.plan,
+          ...basePlan,
           tasks: [...currentTasks, ...newTasks],
         },
       };
@@ -313,7 +318,7 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold font-display">{selectedDate}</h2>
               {isTodayLive ? (
-                <Badge className="border-primary/40 bg-primary/15 text-primary animate-pulse">
+                <Badge className="border-glass-border bg-secondary/60 text-muted-foreground animate-pulse">
                   Live Today · Not Closed
                 </Badge>
               ) : activeRecord.state === "corrected" ? (
@@ -322,17 +327,17 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                   onClick={() => setAuditModalOpen(true)}
                   className="outline-none"
                 >
-                  <Badge className="border-cyan/40 bg-cyan/15 text-cyan cursor-pointer hover:bg-cyan/25">
+                  <Badge className="border-glass-border bg-secondary/60 text-muted-foreground cursor-pointer hover:text-foreground">
                     Corrected ({activeRecord.auditHistory?.length ?? 0} edit)
                   </Badge>
                 </button>
               ) : (
-                <Badge className="border-success/30 text-success bg-success/10">
+                <Badge className="border-glass-border bg-secondary/60 text-muted-foreground">
                   Finalized
                 </Badge>
               )}
               {activeRecord.source === "manual" && (
-                <Badge className="border-warning/30 text-warning bg-warning/10">
+                <Badge className="border-glass-border bg-secondary/60 text-muted-foreground">
                   Manual Entry
                 </Badge>
               )}
@@ -430,9 +435,9 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Outcomes Achieved</span>
-            <ShieldCheck className="h-4 w-4 text-success" />
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
           </div>
-          <div className="font-display text-2xl font-bold mt-2 text-success">
+          <div className="font-display text-2xl font-bold mt-2 text-foreground">
             {activeRecord.outcomesAchieved?.length ?? 0} / 3
           </div>
           <div className="text-xs text-muted-foreground mt-1">
@@ -444,7 +449,7 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>P2 Workstream A / B</span>
-            <Zap className="h-4 w-4 text-cyan" />
+            <Zap className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="font-display text-xl font-bold mt-2">
             {fmtMin(summary?.p2WorkstreamMinutes.workstreamA ?? 0)} /{" "}
@@ -542,9 +547,9 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                         #{out.priorityId} {out.title}
                       </span>
                       {out.workstream && (
-                        <span className="rounded bg-cyan/15 px-1.5 py-0.5 text-[10px] font-medium text-cyan">
+                        <Badge className="text-[10px]">
                           Workstream {out.workstream}
-                        </span>
+                        </Badge>
                       )}
                     </div>
                     <p className="text-muted-foreground leading-relaxed">
@@ -562,9 +567,9 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
 
           {/* Unfinished Work & Carry Forward */}
           {activeRecord.unfinished && activeRecord.unfinished.length > 0 && (
-            <div className="rounded-2xl border border-warning/30 bg-warning/10 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="rounded-2xl border border-glass-border bg-secondary/30 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <div className="text-xs font-semibold text-warning">
+                <div className="text-xs font-semibold text-foreground">
                   Unfinished Work ({activeRecord.unfinished.length} tasks)
                 </div>
                 <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
@@ -575,7 +580,7 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                 variant="glass"
                 size="sm"
                 onClick={handleSeedTomorrow}
-                className="shrink-0 text-xs border-warning/40 text-warning hover:bg-warning/20"
+                className="shrink-0 text-xs"
               >
                 Seed to Plan
               </Button>
@@ -585,7 +590,7 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
           {/* Operational Learning & Reflections */}
           <div className="rounded-2xl border border-glass-border bg-secondary/20 p-3.5">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-semibold text-cyan uppercase tracking-wider">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Operational Learning & Reflection
               </span>
               <div className="flex items-center gap-1">
@@ -677,20 +682,14 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                       {t.durationActualMin}m
                     </td>
                     <td className="py-2.5 pr-2">
-                      <Badge
-                        className={
-                          t.status === "done"
-                            ? "border-success/30 text-success bg-success/10"
-                            : "border-warning/30 text-warning bg-warning/10"
-                        }
-                      >
+                      <Badge className="border-glass-border bg-secondary/60 text-muted-foreground capitalize">
                         {t.status}
                       </Badge>
                     </td>
                     <td className="py-2.5 pr-2">
                       {t.outcomeAchieved ? (
-                        <span className="text-success flex items-center gap-1 font-medium">
-                          <Check className="h-3 w-3" /> Achieved
+                        <span className="text-foreground flex items-center gap-1 font-medium">
+                          <Check className="h-3 w-3 text-cyan" /> Achieved
                         </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
@@ -739,7 +738,7 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                 <div className="font-semibold text-sm mt-1 flex items-center gap-2">
                   <span className="capitalize">{drillTask.status}</span>
                   {drillTask.outcomeAchieved && (
-                    <Badge className="border-success/30 text-success bg-success/10">
+                    <Badge className="border-glass-border bg-secondary/60 text-muted-foreground">
                       Outcome Met
                     </Badge>
                   )}
@@ -774,9 +773,7 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
             {drillTask.workstream && (
               <div>
                 <Label>Priority 2 Workstream</Label>
-                <Badge className="border-cyan/30 text-cyan bg-cyan/10">
-                  Workstream {drillTask.workstream}
-                </Badge>
+                <Badge>Workstream {drillTask.workstream}</Badge>
               </div>
             )}
           </div>

@@ -39,6 +39,7 @@ import {
 import { finalizePeriodReview } from "@/lib/os/reviews/operations";
 import {
   exportPeriodToCSV,
+  exportPeriodToJSON,
   printReviewReport,
 } from "@/lib/os/reviews/exportService";
 import type { PeriodReviewRecord, PriorityId } from "@/lib/os/types";
@@ -228,13 +229,9 @@ export function MonthlyReviewView({ initialDate }: MonthlyReviewViewProps) {
                 ({monthInfo.id})
               </span>
               {finalizedRecord ? (
-                <Badge className="border-success/30 text-success bg-success/10">
-                  Finalized Snapshot
-                </Badge>
+                <Badge>Finalized Snapshot</Badge>
               ) : (
-                <Badge className="border-cyan/30 text-cyan bg-cyan/10">
-                  Current Month
-                </Badge>
+                <Badge>Current Month</Badge>
               )}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
@@ -250,7 +247,16 @@ export function MonthlyReviewView({ initialDate }: MonthlyReviewViewProps) {
             variant="ghost"
             size="sm"
             className="text-xs"
-            onClick={() => exportPeriodToCSV(currentSummary, state.history)}
+            onClick={() =>
+              exportPeriodToCSV(currentSummary, state.history, {
+                includeFinancials: Boolean(
+                  state.sharedReports?.[0]?.includeFinancials,
+                ),
+                includeAuditHistory: Boolean(
+                  state.sharedReports?.[0]?.includeAuditHistory,
+                ),
+              })
+            }
           >
             <Download className="h-3.5 w-3.5 mr-1" /> CSV
           </Button>
@@ -259,7 +265,31 @@ export function MonthlyReviewView({ initialDate }: MonthlyReviewViewProps) {
             size="sm"
             className="text-xs"
             onClick={() =>
-              printReviewReport(currentSummary, state.history, state.userName)
+              exportPeriodToJSON(currentSummary, state.history, {
+                includeFinancials: Boolean(
+                  state.sharedReports?.[0]?.includeFinancials,
+                ),
+                includeAuditHistory: Boolean(
+                  state.sharedReports?.[0]?.includeAuditHistory,
+                ),
+              })
+            }
+          >
+            <Download className="h-3.5 w-3.5 mr-1" /> JSON
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs"
+            onClick={() =>
+              printReviewReport(currentSummary, state.history, state.userName, {
+                includeFinancials: Boolean(
+                  state.sharedReports?.[0]?.includeFinancials,
+                ),
+                includeAuditHistory: Boolean(
+                  state.sharedReports?.[0]?.includeAuditHistory,
+                ),
+              })
             }
           >
             <Printer className="h-3.5 w-3.5 mr-1" /> PDF / Print
@@ -545,15 +575,7 @@ export function MonthlyReviewView({ initialDate }: MonthlyReviewViewProps) {
               {state.goals.levelA.text}
             </span>
           </div>
-          <Badge
-            className={
-              state.goals.levelA.approved
-                ? "border-success/30 text-success"
-                : "text-muted-foreground"
-            }
-          >
-            {state.goals.levelA.approved ? "Approved" : "Proposed"}
-          </Badge>
+          <Badge>{state.goals.levelA.approved ? "Approved" : "Proposed"}</Badge>
         </div>
       </Glass>
 

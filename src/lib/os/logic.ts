@@ -92,7 +92,11 @@ export function startTask(s: OSState, id: string, now = Date.now()): OSState {
 }
 
 export function pauseTask(s: OSState, id: string, now = Date.now()): OSState {
-  return mapTask(s, id, (t) => pauseT(t, now));
+  const next = mapTask(s, id, (t) => pauseT(t, now));
+  return {
+    ...next,
+    activeTaskId: next.activeTaskId === id ? null : next.activeTaskId,
+  };
 }
 
 export function finishTask(
@@ -118,9 +122,12 @@ export function finishTask(
 
 /** Emergency switch: pause current task, preserving its time/output, and remember it. */
 export function emergencyPause(s: OSState, now = Date.now()): OSState {
-  if (!s.activeTaskId) return s;
-  const next = pauseTask(s, s.activeTaskId, now);
-  return { ...next, interruptedTaskId: s.activeTaskId, activeTaskId: null };
+  if (!s.activeTaskId) {
+    return { ...s, interruptedTaskId: null };
+  }
+  const activeId = s.activeTaskId;
+  const next = pauseTask(s, activeId, now);
+  return { ...next, interruptedTaskId: activeId, activeTaskId: null };
 }
 
 export function moveTask(s: OSState, id: string, dir: -1 | 1): OSState {
@@ -170,6 +177,7 @@ export function buildDayRecord(
     id: `snap-${t.id}`,
     taskId: t.id,
     priorityId: t.priorityId,
+    projectId: t.projectId,
     title: t.title,
     durationPlannedMin: t.duration,
     durationActualMin: Math.round(elapsed(t, now) / 60000),
@@ -200,6 +208,7 @@ export function buildDayRecord(
         return {
           title: t.title,
           priorityId: t.priorityId,
+          projectId: t.projectId,
           text: entries.length
             ? entries.map(([k, v]) => `${k}: ${v}`).join(" · ")
             : Object.values(t.output!).filter(Boolean).join(" · "),

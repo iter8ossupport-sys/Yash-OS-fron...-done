@@ -114,7 +114,11 @@ export function ForecastView() {
     };
   }, [forecastHistory]);
 
+  const hasEnoughForecastData =
+    state.history.length >= 3 && forecast.historicalVelocityHoursPerWeek > 0;
+
   const handleSaveBenchmark = () => {
+    if (!hasEnoughForecastData) return;
     update((s) =>
       addForecastSnapshot(s, {
         priorityId: selectedPriorityId,
@@ -146,9 +150,7 @@ export function ForecastView() {
             <h2 className="text-xl font-bold font-display">
               Milestone Velocity & Scenario Forecasting
             </h2>
-            <Badge className="border-cyan/30 text-cyan bg-cyan/10">
-              Deterministic Scenarios
-            </Badge>
+            <Badge>Deterministic Scenarios</Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             Projects milestone completion dates using empirical execution
@@ -172,7 +174,7 @@ export function ForecastView() {
                 className={cn(
                   "flex flex-col items-center gap-2 rounded-2xl border p-3.5 transition-all text-center",
                   selectedPriorityId === p.id
-                    ? "border-primary bg-primary/15 shadow-sm ring-1 ring-primary/40 glow"
+                    ? "border-primary bg-primary/15 shadow-xs ring-1 ring-primary/30"
                     : "border-glass-border bg-secondary/30 hover:bg-secondary/50",
                 )}
               >
@@ -260,17 +262,7 @@ export function ForecastView() {
             </p>
           </div>
 
-          <Badge
-            className={cn(
-              forecast.confidenceScore === "High"
-                ? "border-success/30 text-success bg-success/10"
-                : forecast.confidenceScore === "Medium"
-                  ? "border-cyan/30 text-cyan bg-cyan/10"
-                  : "border-warning/30 text-warning bg-warning/10",
-            )}
-          >
-            {forecast.confidenceScore} Confidence Rating
-          </Badge>
+          <Badge>{forecast.confidenceScore} Confidence Rating</Badge>
         </div>
 
         {/* 3 Scenario Cards: Conservative, Realistic, Optimistic */}
@@ -293,14 +285,12 @@ export function ForecastView() {
           </div>
 
           {/* Realistic (Highlighted) */}
-          <div className="rounded-2xl border-2 border-primary/50 bg-primary/10 p-5 space-y-2 relative shadow-lg glow">
+          <div className="rounded-2xl border border-primary/40 bg-secondary/40 p-5 space-y-2 relative shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-primary">
                 Realistic (Historical Trend)
               </span>
-              <Badge className="border-primary/40 bg-primary/20 text-primary text-[10px]">
-                Recommended
-              </Badge>
+              <Badge className="text-[10px]">Recommended</Badge>
             </div>
             <div className="font-display text-3xl font-bold text-foreground">
               {forecast.scenarios.realistic.estimatedCompletionDate}
@@ -352,9 +342,7 @@ export function ForecastView() {
               delivery.
             </p>
           </div>
-          <Badge className="border-cyan/30 text-cyan bg-cyan/10">
-            Interactive Modeling
-          </Badge>
+          <Badge>Interactive Modeling</Badge>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -441,17 +429,7 @@ export function ForecastView() {
                 <span className="text-muted-foreground">
                   Variance vs. Realistic Trend:
                 </span>
-                <span
-                  className={cn(
-                    "font-mono font-bold text-xs px-2 py-0.5 rounded-full border",
-                    simulatedWeeks < forecast.scenarios.realistic.weeksRemaining
-                      ? "border-success/30 text-success bg-success/10"
-                      : simulatedWeeks >
-                          forecast.scenarios.realistic.weeksRemaining
-                        ? "border-warning/30 text-warning bg-warning/10"
-                        : "border-glass-border text-muted-foreground bg-secondary/30",
-                  )}
-                >
+                <span className="font-mono font-medium text-xs px-2 py-0.5 rounded-full border border-glass-border text-muted-foreground bg-secondary/40">
                   {simulatedWeeks < forecast.scenarios.realistic.weeksRemaining
                     ? `${forecast.scenarios.realistic.weeksRemaining - simulatedWeeks} weeks faster`
                     : simulatedWeeks >
@@ -487,9 +465,7 @@ export function ForecastView() {
               <h3 className="text-base font-semibold">
                 5. Forecast Calibration & Historical Accuracy
               </h3>
-              <Badge className="border-primary/30 text-primary bg-primary/10">
-                Evidence Ledger
-              </Badge>
+              <Badge>Evidence Ledger</Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               Tracks whether previous projected delivery dates matched reality
@@ -499,6 +475,7 @@ export function ForecastView() {
 
           <Button
             size="sm"
+            disabled={!hasEnoughForecastData}
             onClick={handleSaveBenchmark}
             className="flex items-center gap-2 text-xs"
           >
@@ -585,18 +562,7 @@ export function ForecastView() {
                     <Badge className="text-[10px] font-mono">
                       Priority #{item.priorityId}
                     </Badge>
-                    <Badge
-                      className={cn(
-                        "text-[10px]",
-                        item.status === "delivered"
-                          ? item.calibrationRating === "accurate"
-                            ? "border-success/30 text-success bg-success/10"
-                            : item.calibrationRating === "optimistic_bias"
-                              ? "border-warning/30 text-warning bg-warning/10"
-                              : "border-cyan/30 text-cyan bg-cyan/10"
-                          : "border-primary/30 text-primary bg-primary/10",
-                      )}
-                    >
+                    <Badge className="text-[10px]">
                       {item.status === "delivered"
                         ? item.calibrationRating === "accurate"
                           ? "Accurate (±5d)"

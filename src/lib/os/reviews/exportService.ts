@@ -1,12 +1,66 @@
 import type { DayRecord, OSState, ReviewPeriodSummary } from "../types";
 
+export interface ReviewExportOptions {
+  includeFinancials?: boolean;
+  includeAuditHistory?: boolean;
+}
+
+const FINANCIAL_SENSITIVE_PATTERN =
+  /(\$|₹|€|£|\bpnl\b|\bprofit\b|\bloss\b|\bdrawdown\b|\brevenue\b|\bcashflow\b|\bmargin\b|\broi\b)/i;
+
+function sanitizeExportText(
+  text: string | undefined,
+  includeFinancials = false,
+): string {
+  if (!text) return "";
+  if (includeFinancials) return text;
+  if (FINANCIAL_SENSITIVE_PATTERN.test(text)) {
+    return "[REDACTED BY PRIVACY POLICY]";
+  }
+  return text;
+}
+
+export function filterRecordsForPeriod(
+  summary: ReviewPeriodSummary,
+  records: DayRecord[],
+  options: ReviewExportOptions = {},
+): DayRecord[] {
+  const { includeFinancials = false, includeAuditHistory = false } = options;
+  const includedSet = new Set(summary.daysIncluded ?? []);
+
+  return records
+    .filter((r) => {
+      if (includedSet.size > 0 && includedSet.has(r.date)) return true;
+      return r.date >= summary.startDate && r.date <= summary.endDate;
+    })
+    .map((r) => {
+      const copy: DayRecord = {
+        ...r,
+        learning: sanitizeExportText(r.learning, includeFinancials),
+        outputs: (r.outputs ?? []).map((o) => ({
+          ...o,
+          text: sanitizeExportText(o.text, includeFinancials),
+        })),
+        p2WorkstreamMinutes: includeFinancials
+          ? r.p2WorkstreamMinutes
+          : undefined,
+        auditHistory: includeAuditHistory ? r.auditHistory : undefined,
+      };
+      return copy;
+    });
+}
+
 /**
  * Generates and downloads a clean CSV export of review period metrics and daily breakdowns.
  */
 export function exportPeriodToCSV(
   summary: ReviewPeriodSummary,
   records: DayRecord[],
+  options: ReviewExportOptions = {},
 ) {
+  const scopedRecords = filterRecordsForPeriod(summary, records, options);
+  const { includeFinancials = false } = options;
+
   const headers = [
     "Date",
     "State",
@@ -15,8 +69,9 @@ export function exportPeriodToCSV(
     "P1 Actual (min)",
     "P2 Planned (min)",
     "P2 Actual (min)",
-    "P2 Workstream A (min)",
-    "P2 Workstream B (min)",
+    ...(includeFinancials
+      ? ["P2 Workstream A (min)", "P2 Workstream B (min)"]
+      : []),
     "P3 Planned (min)",
     "P3 Actual (min)",
     "Tasks Planned",
@@ -26,7 +81,7 @@ export function exportPeriodToCSV(
     "Learning",
   ];
 
-  const rows = records.map((r) => [
+  const rows = scopedRecords.map((r) => [
     `"${r.date}"`,
     `"${r.state ?? "finalized"}"`,
     `"${r.source ?? "closeout"}"`,
@@ -34,8 +89,12 @@ export function exportPeriodToCSV(
     r.actualMin[1] ?? 0,
     r.plannedMin[2] ?? 0,
     r.actualMin[2] ?? 0,
-    r.p2WorkstreamMinutes?.workstreamA ?? 0,
-    r.p2WorkstreamMinutes?.workstreamB ?? 0,
+    ...(includeFinancials
+      ? [
+          r.p2WorkstreamMinutes?.workstreamA ?? 0,
+          r.p2WorkstreamMinutes?.workstreamB ?? 0,
+        ]
+      : []),
     r.plannedMin[3] ?? 0,
     r.actualMin[3] ?? 0,
     r.tasksPlanned ?? 0,
@@ -65,12 +124,28 @@ export function exportPeriodToCSV(
 export function exportPeriodToJSON(
   summary: ReviewPeriodSummary,
   records: DayRecord[],
+  options: ReviewExportOptions = {},
 ) {
+  const scopedRecords = filterRecordsForPeriod(summary, records, options);
+  const { includeFinancials = false } = options;
+
+  const sanitizedSummary: ReviewPeriodSummary = {
+    ...summary,
+    keyOutputs: (summary.keyOutputs ?? []).map((o) => ({
+      ...o,
+      text: sanitizeExportText(o.text, includeFinancials),
+    })),
+    learningsSummary: (summary.learningsSummary ?? []).map((l) => ({
+      ...l,
+      text: sanitizeExportText(l.text, includeFinancials),
+    })),
+  };
+
   const payload = {
     exportVersion: "1.0",
     exportedAt: new Date().toISOString(),
-    summary,
-    records,
+    summary: sanitizedSummary,
+    records: scopedRecords,
   };
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
@@ -92,9 +167,17 @@ export function printReviewReport(
   summary: ReviewPeriodSummary,
   records: DayRecord[],
   userName = "Yash",
+  options: ReviewExportOptions = {},
 ) {
+  const scopedRecords = filterRecordsForPeriod(summary, records, options);
+  const { includeFinancials = false } = options;
   const printWindow = window.open("", "_blank");
   if (!printWindow) return;
+
+  const safeOutputs = (summary.keyOutputs ?? []).map((o) => ({
+    ...o,
+    text: sanitizeExportText(o.text, includeFinancials),
+  }));
 
   const html = `<!DOCTYPE html>
 <html>
@@ -118,13 +201,13 @@ export function printReviewReport(
 </head>
 <body>
   <h1>Yash OS — Review Report: ${summary.id}</h1>
-  <div class="subtitle">Period: ${summary.startDate} to ${summary.endDate} · Generated for ${userName} · ${records.length} Recorded Day(s)</div>
+  <div class="subtitle">Period: ${summary.startDate} to ${summary.endDate} · Generated for ${userName} · ${scopedRecords.length} Recorded Day(s)</div>
 
   <div class="grid">
     <div class="card"><div class="val">${summary.totalActualHours}h</div><div class="lbl">Actual Hours (Planned: ${summary.totalPlannedHours}h)</div></div>
     <div class="card"><div class="val">${summary.taskCompletionRate}%</div><div class="lbl">Task Completion (${summary.tasksDoneTotal}/${summary.tasksPlannedTotal})</div></div>
     <div class="card"><div class="val">${summary.outcomesRate}%</div><div class="lbl">Outcome Delivery (${summary.outcomesAchievedTotal}/${summary.outcomesPlannedTotal})</div></div>
-    <div class="card"><div class="val">${summary.p2HoursWorkstreamA}h / ${summary.p2HoursWorkstreamB}h</div><div class="lbl">P2 Workstream A / B Split</div></div>
+    <div class="card"><div class="val">${includeFinancials ? `${summary.p2HoursWorkstreamA}h / ${summary.p2HoursWorkstreamB}h` : "Redacted"}</div><div class="lbl">P2 Workstream A / B Split</div></div>
   </div>
 
   <div class="section-title">Priority Breakdown</div>
@@ -137,9 +220,9 @@ export function printReviewReport(
     </tbody>
   </table>
 
-  <div class="section-title">Key Outputs Delivered (${summary.keyOutputs.length})</div>
+  <div class="section-title">Key Outputs Delivered (${safeOutputs.length})</div>
   <ul>
-    ${summary.keyOutputs.map((o) => `<li><strong>[${o.date}] #${o.priorityId} ${o.title}:</strong> ${o.text} ${o.workstream ? `<span class="tag">${o.workstream}</span>` : ""}</li>`).join("")}
+    ${safeOutputs.map((o) => `<li><strong>[${o.date}] #${o.priorityId} ${o.title}:</strong> ${o.text} ${o.workstream ? `<span class="tag">${o.workstream}</span>` : ""}</li>`).join("")}
   </ul>
 
   <div class="section-title">Recurring Unfinished Friction</div>

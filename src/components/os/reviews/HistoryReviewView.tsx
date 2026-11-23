@@ -383,9 +383,7 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                         </span>
                         <Badge className="font-mono text-xs">{totalHrs}h</Badge>
                         {hasCorrection && (
-                          <Badge className="border-cyan/40 bg-cyan/15 text-cyan text-[10px]">
-                            Corrected
-                          </Badge>
+                          <Badge className="text-[10px]">Corrected</Badge>
                         )}
                         <span className="text-xs text-muted-foreground">
                           {rec.dayType ?? "Standard"}
@@ -460,19 +458,11 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                         {rec.date}
                       </span>
                       {hasCorrection ? (
-                        <Badge className="border-cyan/40 bg-cyan/15 text-cyan">
-                          Corrected ({rec.auditHistory!.length})
-                        </Badge>
+                        <Badge>Corrected ({rec.auditHistory!.length})</Badge>
                       ) : (
-                        <Badge className="border-success/30 text-success bg-success/10">
-                          Finalized
-                        </Badge>
+                        <Badge>Finalized</Badge>
                       )}
-                      {rec.source === "manual" && (
-                        <Badge className="border-warning/30 text-warning bg-warning/10">
-                          Manual
-                        </Badge>
-                      )}
+                      {rec.source === "manual" && <Badge>Manual</Badge>}
                       <span className="text-xs text-muted-foreground">
                         {rec.dayType ?? "Standard"}
                       </span>
@@ -555,9 +545,7 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                     <span className="font-display font-semibold text-lg text-foreground">
                       {snap.id}
                     </span>
-                    <Badge className="capitalize border-primary/30 text-primary bg-primary/10">
-                      {snap.type} Review
-                    </Badge>
+                    <Badge className="capitalize">{snap.type} Review</Badge>
                     <span className="text-xs text-muted-foreground">
                       {snap.startDate} to {snap.endDate}
                     </span>

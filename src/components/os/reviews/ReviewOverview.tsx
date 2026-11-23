@@ -95,8 +95,12 @@ export function ReviewOverview({
     return state.history;
   }, [state.history]);
 
-  // Current ISO Week calculation
-  const weekRange = useMemo(() => getISOWeekRange(new Date()), []);
+  // Current Week calculation
+  const weekStartDay = state.reviewSettings?.weekStartDay ?? 1;
+  const weekRange = useMemo(
+    () => getISOWeekRange(new Date(), weekStartDay),
+    [weekStartDay],
+  );
   const weekSummary = useMemo(() => {
     return calculatePeriodSummary(
       historyData,
@@ -194,32 +198,21 @@ export function ReviewOverview({
           {alerts.map((alt) => (
             <div
               key={alt.id}
-              className={cn(
-                "flex items-start justify-between gap-3 rounded-2xl border p-4 transition-all",
-                alt.severity === "critical"
-                  ? "border-destructive/40 bg-destructive/10 text-destructive dark:border-destructive/30"
-                  : alt.severity === "warning"
-                    ? "border-warning/40 bg-warning/10 text-warning dark:border-warning/30"
-                    : "border-cyan/40 bg-cyan/10 text-cyan dark:border-cyan/30",
-              )}
+              className="flex items-start justify-between gap-3 rounded-2xl border border-glass-border bg-secondary/40 p-4 transition-all text-foreground"
             >
               <div className="flex items-start gap-3">
-                {alt.severity === "critical" ? (
-                  <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-destructive" />
-                ) : alt.severity === "warning" ? (
-                  <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-warning" />
-                ) : (
-                  <Info className="h-5 w-5 shrink-0 mt-0.5 text-cyan" />
-                )}
+                <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-muted-foreground" />
                 <div>
                   <div className="font-semibold text-sm">{alt.title}</div>
-                  <div className="text-xs opacity-90 mt-0.5">{alt.message}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {alt.message}
+                  </div>
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                className="shrink-0 text-xs"
+                className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() =>
                   onSelectTab(
                     alt.category === "chronic_bottleneck"
@@ -240,18 +233,10 @@ export function ReviewOverview({
         {/* Today Card */}
         <Glass className="p-5 flex flex-col justify-between relative overflow-hidden group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-cyan">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Today · {liveDayRecord ? "Live State" : "Execution"}
             </span>
-            <Badge
-              className={cn(
-                liveDayRecord
-                  ? "border-primary/40 bg-primary/15 text-primary animate-pulse"
-                  : todaySummary
-                    ? "border-success/30 text-success bg-success/10"
-                    : "text-muted-foreground",
-              )}
-            >
+            <Badge className="border-glass-border bg-secondary/60 text-muted-foreground">
               {liveDayRecord
                 ? "Live Tracking"
                 : todaySummary
@@ -299,7 +284,7 @@ export function ReviewOverview({
         {/* This Week Card */}
         <Glass className="p-5 flex flex-col justify-between group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-cyan">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               This Week · {weekRange.id}
             </span>
             <span className="text-xs text-muted-foreground">
@@ -346,10 +331,10 @@ export function ReviewOverview({
         {/* Compounding & Strategy Card */}
         <Glass className="p-5 flex flex-col justify-between group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-cyan">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Strategic Velocity
             </span>
-            <Badge className="border-cyan/30 text-cyan bg-cyan/10">
+            <Badge className="border-glass-border bg-secondary/60 text-muted-foreground">
               {monthRange.id}
             </Badge>
           </div>
@@ -404,7 +389,7 @@ export function ReviewOverview({
                 Active Custom Metric Formulas
               </span>
             </div>
-            <Badge className="border-cyan/30 text-cyan bg-cyan/10 text-[10px]">
+            <Badge className="text-[10px]">
               {(state.reviewSettings?.customMetrics ?? []).length} Custom
               Formulas
             </Badge>
@@ -421,14 +406,7 @@ export function ReviewOverview({
                     <span className="text-xs font-medium text-foreground truncate">
                       {m.name}
                     </span>
-                    <span
-                      className={cn(
-                        "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded",
-                        res.targetMet
-                          ? "text-success bg-success/15"
-                          : "text-warning bg-warning/15",
-                      )}
-                    >
+                    <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-secondary/60 text-muted-foreground border border-glass-border">
                       {res.targetMet ? "Met" : "Below"}
                     </span>
                   </div>
@@ -722,9 +700,7 @@ export function ReviewOverview({
               <h2 className="text-base font-semibold">
                 Priority 2 Workstream Split
               </h2>
-              <Badge className="border-cyan/30 text-cyan bg-cyan/10">
-                Isolated A / B
-              </Badge>
+              <Badge>Isolated A / B</Badge>
             </div>
             <p className="text-xs text-muted-foreground mb-4">
               Cashflow Infrastructure strictly separated into Trading vs.
@@ -814,9 +790,7 @@ export function ReviewOverview({
                         {item.title}
                       </span>
                     </div>
-                    <Badge className="border-warning/30 bg-warning/10 text-warning">
-                      Postponed {item.count}×
-                    </Badge>
+                    <Badge>Postponed {item.count}×</Badge>
                   </div>
                 ))}
             </div>

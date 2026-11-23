@@ -84,13 +84,18 @@ function PlanPage() {
             variant="primary"
             className="mt-6"
             onClick={() =>
-              update((s) => ({
-                ...s,
-                draft: newDraft({
-                  hours: s.prefs.dayTypeHours["Non-College Day"],
-                }),
-                draftStage: 1,
-              }))
+              update((s) => {
+                const defaultDayType =
+                  s.prefs.defaultDayType ?? "Non-College Day";
+                return {
+                  ...s,
+                  draft: newDraft({
+                    dayType: defaultDayType,
+                    hours: s.prefs.dayTypeHours[defaultDayType] ?? 8,
+                  }),
+                  draftStage: 1,
+                };
+              })
             }
           >
             <Sparkles className="h-4 w-4" /> Start planning
@@ -101,30 +106,51 @@ function PlanPage() {
   }
 
   const ctx = draft.context;
+  const allocated = IDS.reduce((s, i) => s + draft.allocation[i], 0);
+  const allocationOk = allocated > 0 && allocated <= ctx.hours;
+  const outcomesOk = IDS.every((i) => draft.outcomes[i].trim().length > 0);
   const sel = draft.tasks.filter((t) => t.selected);
   const selMin = sel.reduce((s, t) => s + t.duration, 0);
   const perPriorityOk = IDS.every((i) => {
     const n = sel.filter((t) => t.priorityId === i).length;
     return n >= 1 && n <= 3;
   });
+  const canApprove = allocationOk && outcomesOk && perPriorityOk;
 
   const canNext =
-    stage === 4
-      ? IDS.every((i) => draft.outcomes[i].trim())
-      : stage === 5
-        ? draft.tasks.length > 0
-        : stage === 6
-          ? perPriorityOk
-          : true;
+    stage === 3
+      ? allocationOk
+      : stage === 4
+        ? outcomesOk
+        : stage === 5
+          ? draft.tasks.length > 0
+          : stage === 6
+            ? perPriorityOk
+            : true;
 
   const next = () => {
-    if (stage === 3 && !IDS.some((i) => draft.outcomes[i]))
-      setDraft((d) => ({
-        ...d,
-        outcomes: recommendOutcomes(state.priorities),
-      }));
-    if (stage === 4 && draft.tasks.length === 0)
-      setDraft((d) => ({ ...d, tasks: recommendTasks(state.priorities) }));
+    setDraft((d) => {
+      let updated = { ...d };
+      if (stage === 3 && !IDS.some((i) => updated.outcomes[i]?.trim())) {
+        updated = {
+          ...updated,
+          outcomes: recommendOutcomes(state.priorities),
+        };
+      }
+      if (
+        (stage === 4 || stage === 5) &&
+        updated.tasks.filter((t) => t.selected).length === 0
+      ) {
+        updated = {
+          ...updated,
+          tasks:
+            updated.tasks.length > 0
+              ? updated.tasks
+              : recommendTasks(state.priorities),
+        };
+      }
+      return updated;
+    });
     setStage(stage + 1);
   };
 
@@ -198,7 +224,31 @@ function PlanPage() {
         }
       />
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        <PlanNavSidebar stage={stage} onSelectStage={setStage} />
+        <PlanNavSidebar
+          stage={stage}
+          onSelectStage={(nextStage) => {
+            setDraft((d) => {
+              let updated = { ...d };
+              if (
+                nextStage >= 4 &&
+                !IDS.some((i) => updated.outcomes[i]?.trim())
+              ) {
+                updated = {
+                  ...updated,
+                  outcomes: recommendOutcomes(state.priorities),
+                };
+              }
+              if (nextStage >= 5 && updated.tasks.length === 0) {
+                updated = {
+                  ...updated,
+                  tasks: recommendTasks(state.priorities),
+                };
+              }
+              return updated;
+            });
+            setStage(nextStage);
+          }}
+        />
 
         <Glass className="p-6" key={stage}>
           <div className="fade-up">
@@ -214,6 +264,7 @@ function PlanPage() {
               <PlanContextStep
                 draft={draft}
                 dayTypeHours={state.prefs.dayTypeHours}
+                constraints={state.prefs.constraints}
                 onChangeDraft={setDraft}
               />
             )}
@@ -313,7 +364,11 @@ function PlanPage() {
                   Next Step <ArrowRight className="h-4 w-4" />
                 </Button>
               ) : (
-                <Button variant="primary" onClick={approve}>
+                <Button
+                  variant="primary"
+                  disabled={!canApprove}
+                  onClick={approve}
+                >
                   <Check className="h-4 w-4" />
                   Approve plan
                 </Button>

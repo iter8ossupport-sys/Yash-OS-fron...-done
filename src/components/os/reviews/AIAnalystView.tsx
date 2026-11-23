@@ -97,9 +97,7 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
             <h2 className="text-xl font-bold font-display">
               AI Performance Analyst
             </h2>
-            <Badge className="border-cyan/30 text-cyan bg-cyan/10">
-              Deterministic Grounding
-            </Badge>
+            <Badge>Deterministic Grounding</Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             Strictly separates empirical facts, analytical deductions, and
@@ -117,9 +115,9 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
 
       {/* Insufficient Evidence Warning Banner */}
       {hasInsufficientEvidence && (
-        <div className="rounded-2xl border border-warning/40 bg-warning/10 p-4 text-xs space-y-1 animate-in fade-in">
-          <div className="flex items-center gap-2 font-semibold text-warning">
-            <AlertTriangle className="h-4 w-4" />
+        <div className="rounded-2xl border border-glass-border bg-secondary/40 p-4 text-xs space-y-1">
+          <div className="flex items-center gap-2 font-semibold text-foreground">
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             Limited Statistical Evidence Notice
           </div>
           <p className="text-muted-foreground leading-relaxed">
@@ -160,14 +158,7 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
                     {f.title}
                   </span>
                 </div>
-                <Badge
-                  className={cn(
-                    "text-[10px]",
-                    f.evidence.confidence === "High"
-                      ? "border-success/30 text-success"
-                      : "border-warning/30 text-warning",
-                  )}
-                >
+                <Badge className="text-[10px]">
                   {f.evidence.confidence} Confidence
                 </Badge>
               </div>
@@ -209,9 +200,7 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
                   <Lightbulb className="h-4 w-4 text-cyan" />
                   {ins.title}
                 </span>
-                <Badge className="text-[10px] border-cyan/30 text-cyan bg-cyan/10">
-                  {ins.evidence.confidence}
-                </Badge>
+                <Badge className="text-[10px]">{ins.evidence.confidence}</Badge>
               </div>
 
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -261,9 +250,7 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
                       <Sparkles className="h-4 w-4 text-primary" />
                       {rec.title}
                     </span>
-                    <Badge className="text-[10px] border-primary/30 text-primary">
-                      Recommendation
-                    </Badge>
+                    <Badge className="text-[10px]">Recommendation</Badge>
                   </div>
 
                   <p className="text-xs text-muted-foreground leading-relaxed">

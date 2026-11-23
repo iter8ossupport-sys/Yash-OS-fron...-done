@@ -378,8 +378,11 @@ export function ProjectGoalsMilestonesTab({
           onTransition={(decision) => {
             // Update goals in draft
             const goals = draft.goals ? [...draft.goals] : [];
+            const targetGoalId = draft.activeGoalId ?? activeGoal?.id;
             const activeIdx = goals.findIndex(
-              (g) => g.id === draft.activeGoalId,
+              (g) =>
+                (targetGoalId && g.id === targetGoalId) ||
+                g.status === "active",
             );
             const now = new Date().toISOString();
 

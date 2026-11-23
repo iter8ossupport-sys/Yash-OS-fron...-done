@@ -162,7 +162,11 @@ export function ActiveTaskCard({
                 {current.status === "paused" ? "Resume" : "Start"}
               </Button>
             )}
-            <Button variant="success" onClick={() => onFinishTask(current)}>
+            <Button
+              variant="success"
+              disabled={current.status === "done"}
+              onClick={() => onFinishTask(current)}
+            >
               <Check className="h-4 w-4" />
               Finish
             </Button>

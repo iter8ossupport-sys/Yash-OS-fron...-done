@@ -63,6 +63,10 @@ export function ProjectDetailsModal({
   const [customCatInput, setCustomCatInput] = useState("");
 
   const handleSaveDraft = () => {
+    if (!draft.name.trim()) {
+      toast.error("Project name cannot be empty.");
+      return;
+    }
     // Validate Priority 2 required workstream
     if (draft.priorityId === 2 && !draft.workstream) {
       toast.error(
@@ -70,7 +74,7 @@ export function ProjectDetailsModal({
       );
       return;
     }
-    onSave(draft);
+    onSave({ ...draft, name: draft.name.trim() });
     onClose();
   };
 
@@ -303,7 +307,11 @@ export function ProjectDetailsModal({
 
           <div className="flex items-center gap-2">
             <Button onClick={onClose}>Cancel</Button>
-            <Button variant="primary" onClick={handleSaveDraft}>
+            <Button
+              variant="primary"
+              disabled={!draft.name.trim()}
+              onClick={handleSaveDraft}
+            >
               Save Project
             </Button>
           </div>

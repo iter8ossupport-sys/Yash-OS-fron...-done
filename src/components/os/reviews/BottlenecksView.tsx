@@ -232,8 +232,8 @@ export function BottlenecksView() {
 
       {/* Auto-Detected Bottlenecks Banner (if found in recent history) */}
       {detectedBottlenecks.length > 0 && (
-        <div className="rounded-2xl border border-warning/40 bg-warning/10 p-4 space-y-3 animate-in fade-in">
-          <div className="flex items-center gap-2 font-semibold text-warning text-xs uppercase tracking-wider">
+        <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4 space-y-3">
+          <div className="flex items-center gap-2 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
             <Sparkles className="h-4 w-4" />
             Auto-Detected Friction Patterns ({detectedBottlenecks.length})
           </div>
@@ -249,18 +249,16 @@ export function BottlenecksView() {
                 className="flex items-center justify-between rounded-xl bg-secondary/50 border border-glass-border p-3 text-xs"
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold text-warning">
+                  <span className="font-semibold text-foreground">
                     #{d.priorityId}
                   </span>
                   <span className="font-medium text-foreground">{d.title}</span>
-                  <Badge className="border-warning/30 text-warning bg-warning/10">
-                    Stalled across {d.occurrences} days
-                  </Badge>
+                  <Badge>Stalled across {d.occurrences} days</Badge>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs text-cyan hover:bg-cyan/10"
+                  className="h-7 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => handleAdoptDetected(d)}
                 >
                   Adopt to Registry
@@ -275,7 +273,7 @@ export function BottlenecksView() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
           <div className="text-xs text-muted-foreground">Active Blockers</div>
-          <div className="font-display text-2xl font-bold mt-1 text-warning">
+          <div className="font-display text-2xl font-bold mt-1 text-foreground">
             {activeCount}
           </div>
           <div className="text-[11px] text-muted-foreground mt-1">
@@ -284,7 +282,7 @@ export function BottlenecksView() {
         </div>
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
           <div className="text-xs text-muted-foreground">Mitigating</div>
-          <div className="font-display text-2xl font-bold mt-1 text-cyan">
+          <div className="font-display text-2xl font-bold mt-1 text-foreground">
             {mitigatingCount}
           </div>
           <div className="text-[11px] text-muted-foreground mt-1">
@@ -295,7 +293,7 @@ export function BottlenecksView() {
           <div className="text-xs text-muted-foreground">
             Resolved Bottlenecks
           </div>
-          <div className="font-display text-2xl font-bold mt-1 text-success">
+          <div className="font-display text-2xl font-bold mt-1 text-foreground">
             {resolvedCount}
           </div>
           <div className="text-[11px] text-muted-foreground mt-1">
@@ -316,7 +314,7 @@ export function BottlenecksView() {
                 className={cn(
                   "px-3 py-1 rounded-md text-xs font-medium capitalize transition-all",
                   statusFilter === st
-                    ? "bg-primary text-primary-foreground glow"
+                    ? "bg-primary text-primary-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -411,28 +409,10 @@ export function BottlenecksView() {
                         <span className="font-semibold text-base text-foreground">
                           {b.title}
                         </span>
-                        <Badge
-                          className={cn(
-                            "capitalize text-[11px]",
-                            isCritical
-                              ? "border-destructive/40 bg-destructive/15 text-destructive"
-                              : isHigh
-                                ? "border-warning/40 bg-warning/15 text-warning"
-                                : "border-cyan/30 text-cyan bg-cyan/10",
-                          )}
-                        >
+                        <Badge className="capitalize text-[11px] border-glass-border bg-secondary/60 text-muted-foreground">
                           {b.severity} severity
                         </Badge>
-                        <Badge
-                          className={cn(
-                            "capitalize text-[11px]",
-                            b.status === "resolved"
-                              ? "border-success/30 text-success bg-success/10"
-                              : b.status === "mitigating"
-                                ? "border-cyan/30 text-cyan bg-cyan/10"
-                                : "border-warning/30 text-warning bg-warning/10",
-                          )}
-                        >
+                        <Badge className="capitalize text-[11px] border-glass-border bg-secondary/60 text-muted-foreground">
                           {b.status}
                         </Badge>
                       </div>

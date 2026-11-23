@@ -7,3 +7,9 @@ export * from "./AssessCapabilityModal";
 export * from "./RecordLearningReviewModal";
 export * from "./JourneyWorkspaceModal";
 export * from "./Priority3LearningWorkspaceModal";
+export {
+  P3WorkspaceModal,
+  P3WorkspaceShell,
+  P3Provider,
+  useP3,
+} from "@/priority3/presentation";

@@ -71,7 +71,12 @@ function ExecutePage() {
   >(null);
 
   useEffect(() => {
-    if (!plan) return;
+    if (!plan) {
+      if (search.emergency || search.closeout) {
+        nav({ to: "/execute", search: {}, replace: true });
+      }
+      return;
+    }
     if (search.emergency) {
       triggerEmergency();
       nav({ to: "/execute", search: {}, replace: true });
@@ -85,6 +90,7 @@ function ExecutePage() {
 
   function triggerEmergency() {
     update((s) => emergencyPause(s));
+    setSelectedTaskId(null);
     setEmergency(true);
   }
 
@@ -235,7 +241,12 @@ function ExecutePage() {
         interrupted={interrupted}
         sel={sel}
         onSwitchTask={(id) => {
-          update((s) => startTask(s, id));
+          update((s) => ({
+            ...startTask(s, id),
+            interruptedTaskId:
+              s.interruptedTaskId === id ? null : s.interruptedTaskId,
+          }));
+          setSelectedTaskId(id);
           setEmergency(false);
           toast(`Switched to: ${sel.find((t) => t.id === id)?.title || ""}`);
         }}

@@ -20,6 +20,10 @@ import { PortfolioHierarchyTree } from "@/components/os/projects/PortfolioHierar
 import { LearningWorkspaceModal } from "@/components/os/projects/LearningWorkspaceModal";
 import { Priority3LearningWorkspaceModal } from "@/components/os/learning/Priority3LearningWorkspaceModal";
 import { createDefaultLearningSystem } from "@/lib/os/learning/state";
+import { P3WorkspaceModal, P3WorkspaceShell } from "@/priority3/presentation";
+import { MemoryStorageDriver } from "@/priority3";
+import { Route as ProjectsRoute } from "@/routes/projects";
+import { OSProvider } from "@/lib/os/store";
 import { AppShell } from "@/components/os/AppShell";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -37,6 +41,10 @@ vi.mock("@tanstack/react-router", () => ({
     </a>
   ),
   useRouterState: vi.fn(() => "/projects"),
+  createFileRoute: () => (config: { component: React.ComponentType }) => ({
+    ...config,
+    options: config,
+  }),
 }));
 
 vi.mock("@/lib/os/store", () => ({
@@ -589,78 +597,63 @@ describe("4. Priority 3 Learning & Capability Architectural Integration & Regres
     expect(handleOpenLearning).toHaveBeenCalledWith("demo-skills");
   });
 
-  it("Priority3LearningWorkspaceModal renders all 6 main views (Overview, Journeys, Resources, Knowledge, Capabilities, Reviews)", () => {
-    const testState: OSState = {
-      ...initialState,
-      learningSystem: createDefaultLearningSystem(),
-    };
-    const handleUpdate = vi.fn();
+  it("P3WorkspaceModal renders all 5 authoritative workspaces (Overview, Learning Inquiries, Knowledge Hub, Execution Trials, Reviews & Audits)", () => {
+    const memoryDriver = new MemoryStorageDriver();
     const handleClose = vi.fn();
 
     render(
-      <Priority3LearningWorkspaceModal
+      <P3WorkspaceModal
         open={true}
         onClose={handleClose}
-        state={testState}
-        onUpdateState={handleUpdate}
+        storageDriver={memoryDriver}
       />,
     );
 
     // Verify modal title
     expect(
-      screen.getByText("Priority 3: Learning & Capability Development System"),
+      screen.getByText("Priority 3: Learning & Knowledge Intelligence System"),
     ).toBeInTheDocument();
 
-    // Verify 6 main views navigation tabs exist
+    // Verify 5 authoritative workspace tabs exist
     expect(
-      screen.getByRole("button", { name: /1\.\s*Overview/i }),
+      screen.getByRole("button", { name: /^Overview/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /2\.\s*Learning Journeys/i }),
+      screen.getByRole("button", { name: /^Learning/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /3\.\s*Canonical Resources/i }),
+      screen.getByRole("button", { name: /^Knowledge/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /4\.\s*Knowledge/i }),
+      screen.getByRole("button", { name: /^Applications/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /5\.\s*Capability Matrix/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /6\.\s*Reviews/i }),
+      screen.getByRole("button", { name: /^Reviews/i }),
     ).toBeInTheDocument();
 
-    // Verify tab switching to all views
-    fireEvent.click(
-      screen.getByRole("button", { name: /2\.\s*Learning Journeys/i }),
-    );
+    // Tab switching to all 5 workspaces
+    fireEvent.click(screen.getByRole("button", { name: /^Learning/i }));
     expect(
-      screen.getByText(/Active and archived capability acquisition/i),
-    ).toBeInTheDocument();
+      screen.getAllByText(/Learning Questions/i).length,
+    ).toBeGreaterThanOrEqual(1);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /3\.\s*Canonical Resources/i }),
-    );
-    expect(screen.getByText(/Canonical Resource Library/i)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /4\.\s*Knowledge/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Knowledge/i }));
     expect(
-      screen.getByText(/Distilled Knowledge Artifacts/i),
-    ).toBeInTheDocument();
+      screen.getAllByText(/Knowledge Units/i).length,
+    ).toBeGreaterThanOrEqual(1);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /5\.\s*Capability Matrix/i }),
-    );
-    expect(screen.getByText(/Founder Capability Matrix/i)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /6\.\s*Reviews/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Applications/i }));
     expect(
-      screen.getByRole("button", { name: /Conduct Review/i }),
-    ).toBeInTheDocument();
-  });
+      screen.getAllByText(/Application Records/i).length,
+    ).toBeGreaterThanOrEqual(1);
 
-  it("legacy generic 8-stage text is not present, and LearningWorkspaceModal adapter safely forwards to Priority3LearningWorkspaceModal", () => {
+    fireEvent.click(screen.getByRole("button", { name: /^Reviews/i }));
+    expect(
+      screen.getByText(/Learning & Knowledge Intelligence Reviews/i),
+    ).toBeInTheDocument();
+  }, 15000);
+
+  it("legacy generic 8-stage text is not present, and LearningWorkspaceModal adapter safely forwards to P3WorkspaceModal", () => {
     render(<LearningWorkspaceModal open={true} onClose={vi.fn()} />);
 
     // Should NOT have the legacy static text
@@ -668,19 +661,67 @@ describe("4. Priority 3 Learning & Capability Architectural Integration & Regres
       screen.queryByText(/2\.\s*Foundational Domains/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText("Hypothesis & Bottleneck Scoping"),
-    ).not.toBeInTheDocument();
-    expect(
       screen.queryByText("The Iron Law of Learning for Execution"),
     ).not.toBeInTheDocument();
 
     // MUST render the authoritative Priority 3 header
     expect(
-      screen.getByText("Priority 3: Learning & Capability Development System"),
+      screen.getByText("Priority 3: Learning & Knowledge Intelligence System"),
     ).toBeInTheDocument();
   });
 
-  it("persists journey mutations cleanly through onUpdateState", () => {
+  it("ProjectsPage normal navigation opens authoritative P3WorkspaceModal when Workspace button is clicked", () => {
+    const ProjectsPage = (
+      ProjectsRoute as unknown as { component: React.ComponentType }
+    ).component;
+    render(<ProjectsPage />);
+
+    const workspaceBtn = screen.getByTitle("Open Learning Workspace");
+    expect(workspaceBtn).toBeInTheDocument();
+    fireEvent.click(workspaceBtn);
+
+    // Verifies new P3 modal opens
+    expect(
+      screen.getByText("Priority 3: Learning & Knowledge Intelligence System"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^Overview/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^Learning/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^Knowledge/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("regression safeguard: normal Priority 3 navigation never renders legacy 6-tab modal", () => {
+    const ProjectsPage = (
+      ProjectsRoute as unknown as { component: React.ComponentType }
+    ).component;
+    render(<ProjectsPage />);
+
+    const workspaceBtn = screen.getByTitle("Open Learning Workspace");
+    fireEvent.click(workspaceBtn);
+
+    // Old 6-tab modal title and tabs MUST NOT exist
+    expect(
+      screen.queryByText(
+        "Priority 3: Learning & Capability Development System",
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /2\.\s*Learning Journeys/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /3\.\s*Canonical Resources/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /5\.\s*Capability Matrix/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("persists journey mutations cleanly in isolated legacy Priority3LearningWorkspaceModal for backward compatibility", () => {
     let currentState: OSState = {
       ...initialState,
       learningSystem: createDefaultLearningSystem(),

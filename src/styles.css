@@ -42,9 +42,28 @@
   --color-p1: var(--p1);
   --color-p2: var(--p2);
   --color-p3: var(--p3);
+  --color-p3-bg: var(--p3-bg);
+  --color-p3-surface: var(--p3-surface);
+  --color-p3-surface-elevated: var(--p3-surface-elevated);
+  --color-p3-surface-subtle: var(--p3-surface-subtle);
+  --color-p3-text-primary: var(--p3-text-primary);
+  --color-p3-text-secondary: var(--p3-text-secondary);
+  --color-p3-accent: var(--p3-accent);
+  --color-p3-accent-muted: var(--p3-accent-muted);
+  --color-p3-accent-border: var(--p3-accent-border);
+  --color-p3-border: var(--p3-border);
+  --color-p3-border-subtle: var(--p3-border-subtle);
+  --color-p3-border-elevated: var(--p3-border-elevated);
+  --color-p3-input-bg: var(--p3-input-bg);
+  --color-p3-input-border: var(--p3-input-border);
+  --color-p3-input-text: var(--p3-input-text);
+  --color-p3-placeholder: var(--p3-placeholder);
+  --color-p3-modal-bg: var(--p3-modal-bg);
+  --color-p3-modal-backdrop: var(--p3-modal-backdrop);
 }
 
 :root {
+  color-scheme: light;
   --radius: 1rem;
   --background: oklch(0.97 0.008 250);
   --foreground: oklch(0.2 0.04 262);
@@ -84,6 +103,26 @@
   --shadow-glow: 0 10px 30px -8px
     color-mix(in oklab, var(--primary) 50%, transparent);
   --gradient-primary: linear-gradient(135deg, var(--primary), var(--cyan));
+
+  /* Priority 3 Unified Navy Palette (Light theme fallback) */
+  --p3-bg: #f8fafc;
+  --p3-surface: #ffffff;
+  --p3-surface-elevated: #f1f5f9;
+  --p3-surface-subtle: #f8fafc;
+  --p3-text-primary: #071426;
+  --p3-text-secondary: #64748b;
+  --p3-accent: #0284c7;
+  --p3-accent-muted: rgba(2, 132, 199, 0.1);
+  --p3-accent-border: rgba(2, 132, 199, 0.25);
+  --p3-border: rgba(15, 23, 42, 0.1);
+  --p3-border-subtle: rgba(15, 23, 42, 0.05);
+  --p3-border-elevated: rgba(15, 23, 42, 0.16);
+  --p3-input-bg: #ffffff;
+  --p3-input-border: rgba(15, 23, 42, 0.15);
+  --p3-input-text: #071426;
+  --p3-placeholder: #94a3b8;
+  --p3-modal-bg: #ffffff;
+  --p3-modal-backdrop: rgba(15, 23, 42, 0.5);
 }
 
 .dark {
@@ -120,6 +159,26 @@
   --atmo-3: oklch(0.4 0.12 225 / 0.35);
   --shadow-glass:
     0 30px 60px -25px oklch(0 0 0 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.08);
+
+  /* Priority 3 Unified Navy Palette (Strict Global Color DNA) */
+  --p3-bg: #071426;
+  --p3-surface: #10213a;
+  --p3-surface-elevated: #152a4a;
+  --p3-surface-subtle: #0c1a30;
+  --p3-text-primary: #f4f7fb;
+  --p3-text-secondary: #a7b4c8;
+  --p3-accent: #38bdf8;
+  --p3-accent-muted: rgba(56, 189, 248, 0.12);
+  --p3-accent-border: rgba(56, 189, 248, 0.35);
+  --p3-border: rgba(255, 255, 255, 0.08);
+  --p3-border-subtle: rgba(255, 255, 255, 0.05);
+  --p3-border-elevated: rgba(255, 255, 255, 0.15);
+  --p3-input-bg: #0b182b;
+  --p3-input-border: rgba(255, 255, 255, 0.15);
+  --p3-input-text: #f4f7fb;
+  --p3-placeholder: #64748b;
+  --p3-modal-bg: #071426;
+  --p3-modal-backdrop: rgba(0, 0, 0, 0.85);
 }
 
 @layer base {
@@ -318,4 +377,25 @@
 
 input[type="range"] {
   accent-color: var(--primary);
+}
+
+/* React Flow theme compatibility: ensure canvas matches light & dark themes seamlessly */
+.react-flow {
+  background-color: transparent !important;
+  --xy-background-color: transparent !important;
+  --xy-background-color-default: transparent !important;
+}
+
+.react-flow__background {
+  background-color: transparent !important;
+}
+
+html:not(.dark) .react-flow__minimap {
+  background-color: oklch(1 0 0 / 0.9) !important;
+  border-color: oklch(0.85 0.02 250) !important;
+}
+
+.dark .react-flow__minimap {
+  background-color: oklch(0.18 0.05 265 / 0.9) !important;
+  border-color: oklch(0.3 0.05 262 / 0.6) !important;
 }

@@ -381,5 +381,7 @@ export const initialState: OSState = {
       Custom: 5,
     },
     constraints: "",
+    defaultDayType: "Non-College Day",
+    timeZone: "auto",
   },
 };

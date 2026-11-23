@@ -1,9 +1,8 @@
 import {
   Bell,
+  CalendarClock,
   Compass,
-  Cpu,
   HardDrive,
-  Info,
   Palette,
   ShieldCheck,
   User,
@@ -14,10 +13,9 @@ export type SettingsCategory =
   | "profile"
   | "appearance"
   | "workspace"
-  | "navigation"
+  | "daily"
   | "notifications"
   | "data"
-  | "privacy"
   | "system";
 
 export interface SettingsCategoryMeta {
@@ -33,64 +31,55 @@ export const SETTINGS_CATEGORIES: SettingsCategoryMeta[] = [
     id: "profile",
     label: "Profile & Identity",
     description:
-      "Manage your founder identity, circular profile photo, and public name across Yash OS.",
-    shortDesc: "Avatar, name and identity",
+      "Manage your personal founder name and circular profile photo.",
+    shortDesc: "Name and profile photo",
     icon: User,
   },
   {
     id: "appearance",
     label: "Appearance",
     description:
-      "Customize the interface theme and visual mode of the workspace.",
-    shortDesc: "Theme, contrast and colors",
+      "Select between Blue dark theme, White light theme, or OS default.",
+    shortDesc: "Blue, white and system themes",
     icon: Palette,
   },
   {
     id: "workspace",
-    label: "Workspace",
+    label: "Workspace Preferences",
     description:
-      "Foundation principles, strategic phases, permanent priorities, and long-term milestones.",
-    shortDesc: "Foundation, goals and priorities",
+      "Configure strategic workspace narrative and default review landing view.",
+    shortDesc: "Foundation and review defaults",
     icon: Compass,
   },
   {
-    id: "navigation",
-    label: "Navigation & Experience",
+    id: "daily",
+    label: "Daily Preferences",
     description:
-      "Fine-tune execution flow, timer visibility, and personal operating constraints.",
-    shortDesc: "Timer, daily hours and constraints",
-    icon: Cpu,
+      "Configure time zone, week start day, default day hours, timer, and daily constraints.",
+    shortDesc: "Schedule, hours and daily loop",
+    icon: CalendarClock,
   },
   {
     id: "notifications",
     label: "Notifications",
-    description:
-      "System alerts, session transitions, and daily review reminder preferences.",
-    shortDesc: "Alerts and review reminders",
+    description: "Status of notification and reminder support in Yash OS.",
+    shortDesc: "Reminder support status",
     icon: Bell,
   },
   {
     id: "data",
     label: "Data & Storage",
     description:
-      "Local browser persistence, JSON backup exports, data restoration, and factory reset.",
-    shortDesc: "Backup, restore and storage",
+      "Inspect local browser storage, export backups, validate restores, or reset data.",
+    shortDesc: "Storage status, backup and restore",
     icon: HardDrive,
   },
   {
-    id: "privacy",
-    label: "Privacy & Security",
-    description:
-      "Client-side boundary, zero remote telemetry, and local data sovereignty.",
-    shortDesc: "Client-side boundary and autonomy",
-    icon: ShieldCheck,
-  },
-  {
     id: "system",
-    label: "System",
+    label: "System & Privacy",
     description:
-      "Technical specifications, active schema version, platform runtime, and storage diagnostics.",
-    shortDesc: "Version, schema and diagnostics",
-    icon: Info,
+      "Application version, active schema diagnostics, and client-side privacy boundaries.",
+    shortDesc: "Version, schema and boundaries",
+    icon: ShieldCheck,
   },
 ];

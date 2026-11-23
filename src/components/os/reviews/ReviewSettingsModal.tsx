@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useOS } from "@/lib/os/store";
+import { migrateDayRecord } from "@/lib/os/reviews/migrations";
 import {
   addCustomMetric,
   deleteCustomMetric,
@@ -126,25 +127,50 @@ export function ReviewSettingsModal({
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `yash-os-reviews-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    toast.success("Reviews backup downloaded.");
+    try {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `yash-os-reviews-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      toast.success("Reviews backup downloaded.");
+    } finally {
+      URL.revokeObjectURL(url);
+    }
   };
 
   const handleRestoreBackup = (parsed: ReviewsBackupPayload) => {
+    if (!parsed || !Array.isArray(parsed.history)) {
+      toast.error("Invalid backup payload: missing history array.");
+      return;
+    }
+    const safeHistory = parsed.history
+      .filter((item) => Boolean(item) && typeof item === "object")
+      .map(migrateDayRecord);
+
     update((s) => ({
       ...s,
-      history: parsed.history ?? s.history,
-      bottlenecks: parsed.bottlenecks || s.bottlenecks,
-      improvements: parsed.improvements || s.improvements,
-      periodReviews: parsed.periodReviews || s.periodReviews,
-      forecastHistory: parsed.forecastHistory || s.forecastHistory,
-      reviewSettings: parsed.reviewSettings || s.reviewSettings,
+      history: safeHistory,
+      bottlenecks: Array.isArray(parsed.bottlenecks)
+        ? parsed.bottlenecks
+        : s.bottlenecks,
+      improvements: Array.isArray(parsed.improvements)
+        ? parsed.improvements
+        : s.improvements,
+      periodReviews: Array.isArray(parsed.periodReviews)
+        ? parsed.periodReviews
+        : s.periodReviews,
+      forecastHistory: Array.isArray(parsed.forecastHistory)
+        ? parsed.forecastHistory
+        : s.forecastHistory,
+      reviewSettings:
+        parsed.reviewSettings &&
+        typeof parsed.reviewSettings === "object" &&
+        !Array.isArray(parsed.reviewSettings)
+          ? { ...defaultReviewSettings, ...parsed.reviewSettings }
+          : s.reviewSettings,
     }));
     toast.success(
-      `Successfully restored ${parsed.history?.length ?? 0} review records.`,
+      `Successfully restored ${safeHistory.length} review records.`,
     );
     onClose();
   };

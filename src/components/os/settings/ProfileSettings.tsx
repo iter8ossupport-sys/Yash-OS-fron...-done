@@ -1,18 +1,27 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, Check, Trash2, User, X } from "lucide-react";
 import { toast } from "sonner";
-import { useOS } from "@/lib/os/store";
 import { processAvatarFile, validateAvatarFile } from "@/lib/os/avatar";
+import { applyProfileUpdate, selectProfileSettings } from "@/lib/os/settings";
+import { useOS } from "@/lib/os/store";
 import { Button, Input, Label } from "@/components/os/ui";
 import { ProfileAvatar } from "@/components/os/ProfileAvatar";
 import { SettingsSectionHeader } from "./SettingsSectionHeader";
 
 export function ProfileSettings() {
   const { state, update } = useOS();
+  const profile = selectProfileSettings(state);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [nameInput, setNameInput] = useState(profile.userName);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNameInput(profile.userName);
+    setNameError(null);
+  }, [profile.userName]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -42,9 +51,17 @@ export function ProfileSettings() {
 
   const handleSaveAvatar = () => {
     if (!previewAvatar) return;
-    update((s) => ({ ...s, userAvatar: previewAvatar }));
-    setPreviewAvatar(null);
-    toast.success("Profile photo saved successfully");
+    let saved = false;
+    update((s) => {
+      const res = applyProfileUpdate(s, { userAvatar: previewAvatar });
+      if (!res.ok) return s;
+      saved = true;
+      return res.state;
+    });
+    if (saved) {
+      setPreviewAvatar(null);
+      toast.success("Profile photo saved");
+    }
   };
 
   const handleCancelPreview = () => {
@@ -53,55 +70,71 @@ export function ProfileSettings() {
   };
 
   const handleRemoveAvatar = () => {
-    update((s) => ({ ...s, userAvatar: null }));
+    update((s) => {
+      const res = applyProfileUpdate(s, { userAvatar: null });
+      return res.ok ? res.state : s;
+    });
     setPreviewAvatar(null);
     toast.success("Profile photo removed");
   };
+
+  const handleSaveName = (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = applyProfileUpdate(state, { userName: nameInput });
+    if (!res.ok) {
+      setNameError(res.error);
+      toast.error(res.error);
+      return;
+    }
+    setNameError(null);
+    update((s) => {
+      const next = applyProfileUpdate(s, { userName: nameInput });
+      return next.ok ? next.state : s;
+    });
+    toast.success("Display name saved");
+  };
+
+  const isNameDirty = nameInput.trim() !== profile.userName;
 
   return (
     <div className="space-y-6">
       <SettingsSectionHeader
         title="Profile & Identity"
-        description="Manage your founder profile, circular avatar, and public identity across Yash OS."
+        description="Manage your founder display name and circular profile photo across Yash OS."
         icon={User}
       />
 
-      <div className="flex flex-col gap-6 rounded-2xl border border-glass-border/40 bg-secondary/20 p-5 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-5 rounded-2xl border border-glass-border/60 bg-secondary/20 p-5 sm:flex-row sm:items-center">
         <div className="relative flex shrink-0 justify-center">
           <ProfileAvatar
-            src={previewAvatar || state.userAvatar}
-            name={state.userName}
+            src={previewAvatar || profile.userAvatar}
+            name={profile.userName}
             size="xl"
-            className={previewAvatar ? "ring-4 ring-cyan" : undefined}
+            className={previewAvatar ? "ring-2 ring-primary" : undefined}
           />
-          {previewAvatar && (
-            <span className="absolute -bottom-2 rounded-full bg-cyan px-2.5 py-0.5 text-[10px] font-semibold text-background shadow">
-              Preview Mode
-            </span>
-          )}
         </div>
 
         <div className="flex-1 space-y-3">
           <div>
-            <div className="text-sm font-semibold">
-              Profile Photo (Circular DP)
+            <div className="text-sm font-semibold text-foreground">
+              Profile Photo
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
-              Displayed in the application header and review documents. Supports
-              PNG, JPG, WebP, or SVG up to 5MB. Automatically cropped and
-              optimized offline.
+              Displayed in the top bar and review print views. Accepts PNG, JPG,
+              WebP, SVG, or GIF up to 5 MB and crops locally to 256×256.
             </p>
           </div>
 
           <input
             type="file"
             ref={fileInputRef}
+            aria-label="Upload profile photo"
             accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
             className="hidden"
             onChange={handleFileSelect}
           />
 
-          <div className="flex flex-wrap items-center gap-2 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
             {previewAvatar ? (
               <>
                 <Button
@@ -132,9 +165,9 @@ export function ProfileSettings() {
                   disabled={isProcessing}
                 >
                   <Camera className="h-4 w-4" />
-                  {state.userAvatar ? "Replace Photo" : "Upload Photo"}
+                  {profile.userAvatar ? "Replace Photo" : "Upload Photo"}
                 </Button>
-                {state.userAvatar && (
+                {profile.userAvatar && (
                   <Button
                     variant="danger"
                     size="sm"
@@ -151,28 +184,40 @@ export function ProfileSettings() {
         </div>
       </div>
 
-      <div className="space-y-4 pt-2">
-        <div>
-          <Label>Your Name</Label>
+      <form noValidate onSubmit={handleSaveName} className="space-y-3">
+        <Label htmlFor="settings-user-name">Display Name</Label>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Input
-            value={state.userName}
-            onChange={(e) =>
-              update((s) => ({ ...s, userName: e.target.value }))
-            }
+            id="settings-user-name"
+            value={nameInput}
+            onChange={(e) => {
+              setNameInput(e.target.value);
+              if (nameError) setNameError(null);
+            }}
             placeholder="e.g. Yash"
+            maxLength={80}
           />
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            Used in dashboard greetings, header indicators, and generated
-            PDF/print reports.
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={!isNameDirty && !nameError}
+            className="shrink-0"
+          >
+            Save Name
+          </Button>
+        </div>
+        {nameError ? (
+          <p role="alert" className="text-xs text-destructive">
+            {nameError}
           </p>
-        </div>
-
-        <div className="rounded-xl border border-glass-border/40 bg-secondary/15 p-4 text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">Identity Note: </span>
-          The personal founder profile avatar is kept strictly independent from
-          the Yash OS application brand logo.
-        </div>
-      </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Shown in the Home greeting, avatar initials fallback, and exported
+            review headers. Personal identity stays separate from the Yash OS
+            brand.
+          </p>
+        )}
+      </form>
     </div>
   );
 }

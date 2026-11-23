@@ -21,8 +21,11 @@ import {
   TradingOperationModal,
   RecordTradingSessionModal,
 } from "@/components/os/trading";
-// CRITICAL ARCHITECTURAL SAFEGUARD: Priority 3 MUST ALWAYS use Priority3LearningWorkspaceModal from @/components/os/learning. Never replace with obsolete mocks.
-import { Priority3LearningWorkspaceModal } from "@/components/os/learning";
+// Authoritative Priority 3 Learning & Knowledge Intelligence System Modal
+import {
+  P3WorkspaceModal,
+  CreateLearningProjectModal,
+} from "@/priority3/presentation";
 import { ensureLearningSystem } from "@/lib/os/learning/state";
 
 export const Route = createFileRoute("/projects")({
@@ -61,6 +64,8 @@ function ProjectsPage() {
   const [selectedLearningJourneyId, setSelectedLearningJourneyId] = useState<
     string | null
   >(null);
+  const [selectedProjectForLearning, setSelectedProjectForLearning] =
+    useState<Project | null>(null);
   const [isTradingModalOpen, setIsTradingModalOpen] = useState(false);
   const [isLearningModalOpen, setIsLearningModalOpen] = useState(false);
   const [isRecordSessionOpen, setIsRecordSessionOpen] = useState(false);
@@ -101,6 +106,7 @@ function ProjectsPage() {
     if (journeyOrProjectId) {
       const sys = ensureLearningSystem(state);
       const proj = state.projects.find((p) => p.id === journeyOrProjectId);
+      setSelectedProjectForLearning(proj ?? null);
       const matched = sys.journeys.find(
         (j) =>
           j.id === journeyOrProjectId ||
@@ -161,6 +167,7 @@ function ProjectsPage() {
       }
     } else {
       setSelectedLearningJourneyId(null);
+      setSelectedProjectForLearning(null);
     }
     setIsLearningModalOpen(true);
   };
@@ -210,7 +217,6 @@ function ProjectsPage() {
           onClose={() => setActiveDetailsProjectId(null)}
           onSave={(updated) => {
             handleSaveProject(updated);
-            setActiveDetailsProjectId(null);
           }}
           onDelete={() => handleDeleteProject(activeProject.id)}
           onSetActive={(active) =>
@@ -227,20 +233,36 @@ function ProjectsPage() {
       )}
 
       {/* 3. New Project Modal */}
-      {isCreating && (
+      {isCreating && creatingPriority === 3 ? (
+        <CreateLearningProjectModal
+          open={isCreating}
+          onClose={() => setIsCreating(false)}
+          onCreate={(newProj) => {
+            handleSaveProject(newProj);
+            setIsCreating(false);
+            handleOpenLearningWorkspace(newProj.id);
+          }}
+        />
+      ) : isCreating ? (
         <CreateProjectModal
           defaultPriority={creatingPriority}
           onClose={() => setIsCreating(false)}
           onCreate={(newProj) => {
-            const projectWithWorkstream: Project = {
-              ...newProj,
-              workstream: creatingWorkstream ?? newProj.workstream,
-            };
-            handleSaveProject(projectWithWorkstream);
-            setIsCreating(false);
+            if (newProj.priorityId === 3) {
+              handleSaveProject(newProj);
+              setIsCreating(false);
+              handleOpenLearningWorkspace(newProj.id);
+            } else {
+              const projectWithWorkstream: Project = {
+                ...newProj,
+                workstream: creatingWorkstream ?? newProj.workstream,
+              };
+              handleSaveProject(projectWithWorkstream);
+              setIsCreating(false);
+            }
           }}
         />
-      )}
+      ) : null}
 
       {/* 4. Trading Operation Modal */}
       {isTradingModalOpen && (
@@ -262,17 +284,16 @@ function ProjectsPage() {
         />
       )}
 
-      {/* 6. Priority 3 Learning & Capability Workspace Modal (Authoritative 6-view & 7-journey system) */}
+      {/* 6. Priority 3 Learning & Knowledge Intelligence System Modal */}
       {isLearningModalOpen && (
-        <Priority3LearningWorkspaceModal
+        <P3WorkspaceModal
           open={isLearningModalOpen}
+          project={selectedProjectForLearning ?? undefined}
           onClose={() => {
             setIsLearningModalOpen(false);
             setSelectedLearningJourneyId(null);
+            setSelectedProjectForLearning(null);
           }}
-          state={state}
-          onUpdateState={(fn) => update(fn)}
-          initialJourneyId={selectedLearningJourneyId}
         />
       )}
 

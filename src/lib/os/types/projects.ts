@@ -412,6 +412,8 @@ export interface Project {
   demo?: boolean | undefined;
   deadline?: string | undefined;
   workstream?: "A" | "B" | undefined;
+  learningFoundation?:
+    "human_understanding" | "reality_understanding" | "custom" | undefined;
   learningCategories?: string[] | undefined;
   docs?: (ProjectDoc | ProjectDocument)[] | undefined;
 

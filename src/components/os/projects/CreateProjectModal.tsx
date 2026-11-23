@@ -32,7 +32,10 @@ export function CreateProjectModal({
     defaultWorkstream ?? null,
   );
 
-  // Priority 3 optional learning categories
+  // Priority 3 foundation & optional learning categories
+  const [learningFoundation, setLearningFoundation] = useState<
+    "human_understanding" | "reality_understanding" | "custom"
+  >("human_understanding");
   const [learningCategories, setLearningCategories] = useState<string[]>([]);
   const [customCatInput, setCustomCatInput] = useState("");
 
@@ -83,6 +86,7 @@ export function CreateProjectModal({
       createdAt: today(),
       deadline: "",
       workstream: priorityId === 2 ? workstream! : undefined,
+      learningFoundation: priorityId === 3 ? learningFoundation : undefined,
       learningCategories: priorityId === 3 ? learningCategories : undefined,
       docs: [],
     });
@@ -217,74 +221,135 @@ export function CreateProjectModal({
           </div>
         )}
 
-        {/* Conditional Priority 3: Optional Learning Categories */}
+        {/* Conditional Priority 3: Foundation and Learning Categories */}
         {priorityId === 3 && (
-          <div className="rounded-xl border border-violet/40 bg-violet/5 p-3.5 space-y-2.5">
-            <Label className="text-violet font-semibold mb-0">
-              Learning Categories (Optional Multi-Select)
-            </Label>
-            <div className="flex flex-wrap gap-1.5">
-              {SUGGESTED_LEARNING_CATEGORIES.map((cat) => {
-                const selected = learningCategories.includes(cat);
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => handleToggleCategory(cat)}
-                    className={cn(
-                      "rounded-lg border px-2 py-1 text-[11px] font-medium transition-all",
-                      selected
-                        ? "border-violet bg-violet/20 text-foreground ring-1 ring-violet/50"
-                        : "border-glass-border bg-secondary/40 text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {selected && (
-                      <Check className="mr-1 inline h-3 w-3 text-violet" />
-                    )}
-                    {cat}
-                  </button>
-                );
-              })}
-              {learningCategories
-                .filter((cat) => !SUGGESTED_LEARNING_CATEGORIES.includes(cat))
-                .map((customCat) => (
-                  <span
-                    key={customCat}
-                    className="inline-flex items-center gap-1 rounded-lg border border-violet/50 bg-violet/20 px-2 py-1 text-[11px] font-medium text-foreground"
-                  >
-                    {customCat}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleCategory(customCat)}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+          <div className="rounded-xl border border-violet/40 bg-violet/5 p-3.5 space-y-3">
+            <div>
+              <Label className="text-violet font-semibold mb-1 block">
+                Learning Foundation *
+              </Label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLearningFoundation("human_understanding")}
+                  className={cn(
+                    "flex flex-col text-left p-2 rounded-lg border text-xs transition-all",
+                    learningFoundation === "human_understanding"
+                      ? "border-violet bg-violet/20 text-foreground ring-1 ring-violet"
+                      : "border-glass-border bg-secondary/40 text-muted-foreground hover:bg-secondary/60",
+                  )}
+                >
+                  <div className="flex items-center gap-1 font-semibold text-foreground">
+                    <span>A</span> Human
+                  </div>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                    Biology & Mind
                   </span>
-                ))}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLearningFoundation("reality_understanding")}
+                  className={cn(
+                    "flex flex-col text-left p-2 rounded-lg border text-xs transition-all",
+                    learningFoundation === "reality_understanding"
+                      ? "border-violet bg-violet/20 text-foreground ring-1 ring-violet"
+                      : "border-glass-border bg-secondary/40 text-muted-foreground hover:bg-secondary/60",
+                  )}
+                >
+                  <div className="flex items-center gap-1 font-semibold text-foreground">
+                    <span>B</span> Reality
+                  </div>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                    Physics & AI
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLearningFoundation("custom")}
+                  className={cn(
+                    "flex flex-col text-left p-2 rounded-lg border text-xs transition-all",
+                    learningFoundation === "custom"
+                      ? "border-violet bg-violet/20 text-foreground ring-1 ring-violet"
+                      : "border-glass-border bg-secondary/40 text-muted-foreground hover:bg-secondary/60",
+                  )}
+                >
+                  <div className="flex items-center gap-1 font-semibold text-foreground">
+                    <span>C</span> Custom
+                  </div>
+                  <span className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                    Flexible
+                  </span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 pt-1">
-              <Input
-                className="h-8 text-xs"
-                placeholder="Add custom learning category..."
-                value={customCatInput}
-                onChange={(e) => setCustomCatInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddCustomCategory();
-                  }
-                }}
-              />
-              <Button
-                size="sm"
-                variant="glass"
-                className="h-8 shrink-0 text-xs"
-                onClick={handleAddCustomCategory}
-              >
-                Add
-              </Button>
+            <div>
+              <Label className="text-violet font-semibold mb-1 block">
+                Learning Categories (Optional Multi-Select)
+              </Label>
+              <div className="flex flex-wrap gap-1.5">
+                {SUGGESTED_LEARNING_CATEGORIES.map((cat) => {
+                  const selected = learningCategories.includes(cat);
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => handleToggleCategory(cat)}
+                      className={cn(
+                        "rounded-lg border px-2 py-1 text-[11px] font-medium transition-all",
+                        selected
+                          ? "border-violet bg-violet/20 text-foreground ring-1 ring-violet/50"
+                          : "border-glass-border bg-secondary/40 text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {selected && (
+                        <Check className="mr-1 inline h-3 w-3 text-violet" />
+                      )}
+                      {cat}
+                    </button>
+                  );
+                })}
+                {learningCategories
+                  .filter((cat) => !SUGGESTED_LEARNING_CATEGORIES.includes(cat))
+                  .map((customCat) => (
+                    <span
+                      key={customCat}
+                      className="inline-flex items-center gap-1 rounded-lg border border-violet/50 bg-violet/20 px-2 py-1 text-[11px] font-medium text-foreground"
+                    >
+                      {customCat}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleCategory(customCat)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <Input
+                  className="h-8 text-xs"
+                  placeholder="Add custom learning category..."
+                  value={customCatInput}
+                  onChange={(e) => setCustomCatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddCustomCategory();
+                    }
+                  }}
+                />
+                <Button
+                  size="sm"
+                  variant="glass"
+                  className="h-8 shrink-0 text-xs"
+                  onClick={handleAddCustomCategory}
+                >
+                  Add
+                </Button>
+              </div>
             </div>
           </div>
         )}

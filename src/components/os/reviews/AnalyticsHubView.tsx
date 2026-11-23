@@ -668,9 +668,7 @@ export function AnalyticsHubView({
                   cannibalize software development (Workstream B).
                 </p>
               </div>
-              <Badge className="border-cyan/30 text-cyan bg-cyan/10">
-                No Cross-Contamination
-              </Badge>
+              <Badge>No Cross-Contamination</Badge>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 mt-4">
@@ -744,7 +742,7 @@ export function AnalyticsHubView({
                 className={cn(
                   "p-5 flex flex-col justify-between cursor-pointer transition-all",
                   selectedProjectId === project.id
-                    ? "border-primary bg-primary/10 glow"
+                    ? "border-primary bg-primary/10"
                     : "hover:bg-secondary/40",
                 )}
                 onClick={() =>
@@ -758,16 +756,7 @@ export function AnalyticsHubView({
                     <span className="font-semibold text-sm truncate">
                       {project.name}
                     </span>
-                    <Badge
-                      className={cn(
-                        "text-[10px]",
-                        project.status === "active"
-                          ? "border-primary/30 text-primary bg-primary/10"
-                          : "text-muted-foreground",
-                      )}
-                    >
-                      {project.status}
-                    </Badge>
+                    <Badge className="text-[10px]">{project.status}</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
                     {project.objective || "Project track"}

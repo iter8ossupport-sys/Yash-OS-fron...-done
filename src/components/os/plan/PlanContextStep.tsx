@@ -5,18 +5,30 @@ import { DAY_TYPES, ENERGY } from "./planConstants";
 export interface PlanContextStepProps {
   draft: Plan;
   dayTypeHours: Record<DayType, number>;
+  constraints?: string | undefined;
   onChangeDraft: (fn: (d: Plan) => Plan) => void;
 }
 
 export function PlanContextStep({
   draft,
   dayTypeHours,
+  constraints,
   onChangeDraft,
 }: PlanContextStepProps) {
   const ctx = draft.context;
 
   return (
     <div className="space-y-6">
+      {constraints?.trim() ? (
+        <div className="rounded-xl border border-glass-border bg-secondary/30 p-3.5 text-xs">
+          <div className="font-semibold uppercase tracking-wider text-muted-foreground">
+            Personal Operating Constraints
+          </div>
+          <p className="mt-1 whitespace-pre-wrap text-foreground/90 leading-relaxed">
+            {constraints.trim()}
+          </p>
+        </div>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label>Date</Label>

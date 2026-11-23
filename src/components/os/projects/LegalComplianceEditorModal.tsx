@@ -548,10 +548,10 @@ export function LegalComplianceEditorModal({
             <div className="space-y-2">
               {(draftContent.jurisdictions ?? []).map((jur, idx) => (
                 <div
-                  key={`${jur.jurisdictionCode}-${idx}`}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-glass-border/60 bg-secondary/20 p-3 text-xs"
+                  key={idx}
+                  className="space-y-2.5 rounded-xl border border-glass-border/60 bg-secondary/20 p-3 text-xs"
                 >
-                  <div className="space-y-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-foreground">
                         {jur.jurisdictionCode}
@@ -563,25 +563,74 @@ export function LegalComplianceEditorModal({
                         {jur.complianceStatus}
                       </Badge>
                     </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      Regime: {jur.applicableRegime} | Phase:{" "}
-                      {jur.targetLaunchPhase}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDraftContent({
+                          ...draftContent,
+                          jurisdictions: (
+                            draftContent.jurisdictions ?? []
+                          ).filter((_, i) => i !== idx),
+                        });
+                      }}
+                      className="text-muted-foreground hover:text-destructive p-1"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDraftContent({
-                        ...draftContent,
-                        jurisdictions: (
-                          draftContent.jurisdictions ?? []
-                        ).filter((_, i) => i !== idx),
-                      });
-                    }}
-                    className="text-muted-foreground hover:text-destructive p-1"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <Input
+                      value={jur.jurisdictionCode}
+                      aria-label={`Jurisdiction Code ${idx + 1}`}
+                      placeholder="Jurisdiction (e.g. US - Federal)"
+                      onChange={(e) => {
+                        const next = [...(draftContent.jurisdictions ?? [])];
+                        next[idx] = {
+                          ...jur,
+                          jurisdictionCode: e.target.value,
+                        };
+                        setDraftContent({
+                          ...draftContent,
+                          jurisdictions: next,
+                        });
+                      }}
+                      className="text-xs h-8"
+                    />
+                    <Input
+                      value={jur.regulatoryBody}
+                      aria-label={`Regulatory Body ${idx + 1}`}
+                      placeholder="Regulator (e.g. CFTC / SEC)"
+                      onChange={(e) => {
+                        const next = [...(draftContent.jurisdictions ?? [])];
+                        next[idx] = {
+                          ...jur,
+                          regulatoryBody: e.target.value,
+                        };
+                        setDraftContent({
+                          ...draftContent,
+                          jurisdictions: next,
+                        });
+                      }}
+                      className="text-xs h-8"
+                    />
+                    <Input
+                      value={jur.applicableRegime}
+                      aria-label={`Applicable Regime ${idx + 1}`}
+                      placeholder="Applicable Regime"
+                      onChange={(e) => {
+                        const next = [...(draftContent.jurisdictions ?? [])];
+                        next[idx] = {
+                          ...jur,
+                          applicableRegime: e.target.value,
+                        };
+                        setDraftContent({
+                          ...draftContent,
+                          jurisdictions: next,
+                        });
+                      }}
+                      className="text-xs h-8"
+                    />
+                  </div>
                 </div>
               ))}
             </div>

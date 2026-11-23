@@ -30,14 +30,7 @@ export function PlanPrioritiesStep({
         return (
           <div
             key={p.id}
-            className={cn(
-              "rounded-2xl border border-glass-border bg-secondary/40 p-5 shadow-sm transition hover:border-primary/40",
-              p.id === 1
-                ? "border-l-4 border-l-p1"
-                : p.id === 2
-                  ? "border-l-4 border-l-p2"
-                  : "border-l-4 border-l-p3",
-            )}
+            className="rounded-2xl border border-glass-border bg-card/60 p-5 shadow-xs transition hover:border-border"
           >
             {/* Priority Header */}
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -48,7 +41,7 @@ export function PlanPrioritiesStep({
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       Priority {p.id}
                     </span>
-                    <h3 className="font-display text-base font-semibold">
+                    <h3 className="font-display text-base font-semibold text-foreground">
                       {p.name}
                     </h3>
                   </div>
@@ -59,10 +52,10 @@ export function PlanPrioritiesStep({
             </div>
 
             {/* Active Project Highlight & Polished Selection Control */}
-            <div className="mt-4 rounded-xl border border-glass-border bg-background/50 p-3.5">
+            <div className="mt-4 rounded-xl border border-glass-border bg-secondary/30 p-3.5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <FolderGit2 className="h-4 w-4 text-cyan" />
+                  <FolderGit2 className="h-4 w-4 text-muted-foreground" />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Active Project:
                   </span>
@@ -72,7 +65,9 @@ export function PlanPrioritiesStep({
                 </div>
                 {eligibleProjects.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <Label className="mb-0 text-[11px]">Switch project:</Label>
+                    <Label className="mb-0 text-[11px] text-muted-foreground">
+                      Switch project:
+                    </Label>
                     <select
                       value={p.activeProjectId || ""}
                       aria-label={`Select active project for ${p.name}`}
@@ -99,21 +94,21 @@ export function PlanPrioritiesStep({
             {/* Visually Separated Milestone and Bottleneck */}
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-glass-border bg-secondary/30 p-3">
-                <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-cyan">
-                  <Flag className="h-3.5 w-3.5" />
+                <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                  <Flag className="h-3.5 w-3.5 text-muted-foreground" />
                   <span>Current Milestone</span>
                 </div>
-                <div className="text-xs text-foreground/90">
+                <div className="text-xs font-medium text-foreground">
                   {p.milestone || "None set"}
                 </div>
               </div>
 
-              <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
-                <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-warning">
-                  <AlertTriangle className="h-3.5 w-3.5" />
+              <div className="rounded-xl border border-glass-border bg-secondary/30 p-3">
+                <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                  <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground" />
                   <span>Main Bottleneck</span>
                 </div>
-                <div className="text-xs text-foreground/90">
+                <div className="text-xs font-medium text-foreground">
                   {p.bottleneck || "No bottleneck specified"}
                 </div>
               </div>

@@ -381,9 +381,13 @@ export function calculatePeriodSummary(
 }
 
 /**
- * Returns deterministic start (Monday) and end (Sunday) dates for an ISO 8601 calendar week.
+ * Returns deterministic start and end dates for a 7-day calendar week.
+ * Defaults to ISO 8601 Monday start (`weekStartDay = 1`), or Sunday start (`0`).
  */
-export function getISOWeekRange(dateInput: Date | string): {
+export function getISOWeekRange(
+  dateInput: Date | string,
+  weekStartDay: 0 | 1 = 1,
+): {
   startDate: string;
   endDate: string;
   weekNumber: number;
@@ -392,17 +396,21 @@ export function getISOWeekRange(dateInput: Date | string): {
 } {
   const d = new Date(dateInput);
   const day = d.getDay(); // 0 is Sun, 1 is Mon...
-  const diffToMon = day === 0 ? -6 : 1 - day;
+  const diffToStart = weekStartDay === 0 ? -day : day === 0 ? -6 : 1 - day;
 
-  const mon = new Date(d);
-  mon.setDate(d.getDate() + diffToMon);
+  const weekStart = new Date(d);
+  weekStart.setDate(d.getDate() + diffToStart);
 
-  const sun = new Date(mon);
-  sun.setDate(mon.getDate() + 6);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
 
-  // ISO week calculation
-  const target = new Date(mon.valueOf());
-  const dayNr = (mon.getDay() + 6) % 7;
+  // Anchor on the Monday within this week window so ISO week number & year align consistently
+  const anchor = new Date(weekStart.valueOf());
+  if (weekStartDay === 0) {
+    anchor.setDate(anchor.getDate() + 1);
+  }
+  const target = new Date(anchor.valueOf());
+  const dayNr = (anchor.getDay() + 6) % 7;
   target.setDate(target.getDate() - dayNr + 3);
   const firstThursday = target.valueOf();
   target.setMonth(0, 1);
@@ -411,11 +419,11 @@ export function getISOWeekRange(dateInput: Date | string): {
   }
   const weekNumber =
     1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
-  const year = mon.getFullYear();
+  const year = anchor.getFullYear();
 
   const toIso = (date: Date) => date.toISOString().slice(0, 10);
-  const startDate = toIso(mon);
-  const endDate = toIso(sun);
+  const startDate = toIso(weekStart);
+  const endDate = toIso(weekEnd);
   const id = `${year}-W${String(weekNumber).padStart(2, "0")}`;
 
   return { startDate, endDate, weekNumber, year, id };

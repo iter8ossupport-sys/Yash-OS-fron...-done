@@ -14,6 +14,20 @@ export type KnowledgeType =
 
 export type KnowledgeFormat = "principle" | "method" | "framework" | "custom";
 
+export type KnowledgeConfidence = "experimental" | "supported" | "established";
+
+export type KnowledgeSourceSystem =
+  "priority1" | "priority2" | "priority3" | "reviews" | "os_core" | "knowledge";
+
+/** Stable cross-system pointer to an authoritative operational record */
+export interface KnowledgeSourceReference {
+  readonly system: KnowledgeSourceSystem;
+  readonly entityType: string;
+  readonly entityId: string;
+  readonly secondaryId?: string | undefined;
+  readonly humanReadablePath: string;
+}
+
 export interface PrincipleData {
   corePrinciple: string;
   whyItMatters?: string | undefined;
@@ -62,4 +76,89 @@ export interface KnowledgeItem {
   knowledgeFormat?: KnowledgeFormat | undefined;
   formatData?: KnowledgeFormatData | undefined;
   schemaVersion?: number | undefined;
+
+  // Phase 1 Global Knowledge Extensions (Optional, 100% backward-compatible)
+  sourceReferences?: KnowledgeSourceReference[] | undefined;
+  promotedFromReviewId?: string | undefined;
+  confidence?: KnowledgeConfidence | undefined;
+  updatedAt?: string | undefined;
+}
+
+/**
+ * Validates the optional Global Knowledge extension fields on a KnowledgeItem.
+ */
+export function validateKnowledgeItemExtensions(item: Partial<KnowledgeItem>): {
+  valid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+
+  if (
+    item.confidence &&
+    !["experimental", "supported", "established"].includes(item.confidence)
+  ) {
+    errors.push(
+      `Invalid confidence level: '${item.confidence}'. Must be 'experimental', 'supported', or 'established'.`,
+    );
+  }
+
+  if (item.sourceReferences !== undefined) {
+    if (!Array.isArray(item.sourceReferences)) {
+      errors.push("sourceReferences must be an array.");
+    } else {
+      item.sourceReferences.forEach((ref, idx) => {
+        if (!ref || typeof ref !== "object") {
+          errors.push(`sourceReferences[${idx}] must be a valid object.`);
+          return;
+        }
+        if (
+          !ref.system ||
+          ![
+            "priority1",
+            "priority2",
+            "priority3",
+            "reviews",
+            "os_core",
+            "knowledge",
+          ].includes(ref.system)
+        ) {
+          errors.push(`sourceReferences[${idx}].system is invalid or missing.`);
+        }
+        if (!ref.entityType || typeof ref.entityType !== "string") {
+          errors.push(
+            `sourceReferences[${idx}].entityType is required and must be a string.`,
+          );
+        }
+        if (!ref.entityId || typeof ref.entityId !== "string") {
+          errors.push(
+            `sourceReferences[${idx}].entityId is required and must be a string.`,
+          );
+        }
+        if (
+          ref.humanReadablePath !== undefined &&
+          typeof ref.humanReadablePath !== "string"
+        ) {
+          errors.push(
+            `sourceReferences[${idx}].humanReadablePath must be a string.`,
+          );
+        }
+      });
+    }
+  }
+
+  if (
+    item.promotedFromReviewId !== undefined &&
+    typeof item.promotedFromReviewId !== "string"
+  ) {
+    errors.push("promotedFromReviewId must be a string.");
+  }
+
+  if (item.updatedAt !== undefined && typeof item.updatedAt !== "string") {
+    errors.push("updatedAt must be an ISO date string.");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
 }

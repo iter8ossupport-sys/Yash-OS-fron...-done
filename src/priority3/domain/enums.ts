@@ -55,6 +55,7 @@ export const KNOWLEDGE_PERSPECTIVES = [
   "objective_knowledge",
   "personal_understanding",
   "hypothesis",
+  "unclassified",
 ] as const;
 export type KnowledgePerspective = (typeof KNOWLEDGE_PERSPECTIVES)[number];
 

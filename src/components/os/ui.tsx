@@ -104,10 +104,25 @@ export function Select({
 export function Label({
   children,
   className,
+  htmlFor,
 }: {
   children: ReactNode;
   className?: string;
+  htmlFor?: string | undefined;
 }) {
+  if (htmlFor) {
+    return (
+      <label
+        htmlFor={htmlFor}
+        className={cn(
+          "mb-1.5 block text-xs font-medium text-muted-foreground",
+          className,
+        )}
+      >
+        {children}
+      </label>
+    );
+  }
   return (
     <div
       className={cn(
@@ -213,9 +228,9 @@ export const DemoTag = () => null;
 
 const P_ICON = { 1: Cpu, 2: Database, 3: BookOpen } as const;
 const P_TONE = {
-  1: "text-p1 bg-p1/15 border-p1/30",
-  2: "text-p2 bg-p2/15 border-p2/30",
-  3: "text-p3 bg-p3/15 border-p3/30",
+  1: "text-foreground bg-secondary/50 border-glass-border",
+  2: "text-foreground bg-secondary/50 border-glass-border",
+  3: "text-foreground bg-secondary/50 border-glass-border",
 } as const;
 export function PriorityIcon({
   id,

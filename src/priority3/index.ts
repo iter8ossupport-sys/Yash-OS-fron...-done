@@ -6,3 +6,5 @@
 export * from "./domain";
 export * from "./application/ports";
 export * from "./infrastructure/persistence";
+export * from "./infrastructure/migration";
+export * from "./presentation";

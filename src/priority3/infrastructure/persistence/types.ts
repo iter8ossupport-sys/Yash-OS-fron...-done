@@ -48,6 +48,32 @@ export interface P3StorageSchema {
   readonly inbox: readonly CaptureInboxItemEntity[];
   readonly context: LearningContextEntity;
   readonly backupSnapshots: readonly P3BackupSnapshot[];
+  readonly legacyArchive?: P3LegacyArchiveContainer | undefined;
+}
+
+/** Immutable archive container preserving complete legacy payloads */
+export interface P3LegacyArchiveContainer {
+  readonly archiveTimestamp: string;
+  readonly rawPayloadSha256: string;
+  readonly legacySystemPayload: {
+    readonly id: string;
+    readonly version: number;
+    readonly coreDocument: {
+      readonly title: string;
+      readonly markdownContent: string;
+      readonly lastUpdated: string;
+    };
+    readonly activeWorkflow: string;
+    readonly journeys: readonly Record<string, unknown>[];
+    readonly resources: readonly Record<string, unknown>[];
+    readonly sessions: readonly Record<string, unknown>[];
+    readonly applications: readonly Record<string, unknown>[];
+    readonly capabilities: readonly Record<string, unknown>[];
+    readonly knowledgeArtifacts: readonly Record<string, unknown>[];
+    readonly reviews: readonly Record<string, unknown>[];
+    readonly acquisitions?: readonly Record<string, unknown>[] | undefined;
+    readonly discoveries?: readonly Record<string, unknown>[] | undefined;
+  };
 }
 
 /** Point-in-time recovery snapshot */

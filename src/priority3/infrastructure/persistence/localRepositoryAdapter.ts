@@ -597,7 +597,24 @@ export class LocalEvidenceRepository implements IEvidenceRepository {
       if (s.evidence.some((item) => item.id === evidence.id)) {
         throw new Error(`Evidence with ID '${evidence.id}' already exists.`);
       }
-      return { ...s, evidence: [evidence, ...s.evidence] };
+      const knowledgeUnits = s.knowledgeUnits.map((ku) => {
+        if (ku.id !== evidence.knowledgeUnitId) return ku;
+        const existingIds = ku.sourcesAndEvidence?.evidenceIds ?? [];
+        if (existingIds.includes(evidence.id)) return ku;
+        return {
+          ...ku,
+          sourcesAndEvidence: {
+            ...ku.sourcesAndEvidence,
+            evidenceIds: [...existingIds, evidence.id],
+          },
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      return {
+        ...s,
+        evidence: [evidence, ...s.evidence],
+        knowledgeUnits,
+      };
     });
 
     return evidence;
